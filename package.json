@@ -1,0 +1,18 @@
+{
+  "name": "blueline",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The ten laws of a marketing site, and agent skills that review a site, a page, a draft or a change against them.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "check": "node scripts/build.mjs --check && node scripts/validate.mjs",
+    "test": "node --test test/",
+    "check:safety": "node scripts/check-public-safety.mjs",
+    "check:safety:history": "node scripts/check-public-safety.mjs --history"
+  }
+}

@@ -1,3 +1,5 @@
+<!-- Generated from laws/10-gates.md by scripts/build.mjs. Edit the source, not this copy. -->
+
 # Law 10. Nothing ships without a gate
 
 **The law.** A gate stops the mistakes that cost traffic or trust, so memory does not have to:
