@@ -41,7 +41,7 @@ The AI crawlers and what each one does: [ai-crawlers.md](references/ai-crawlers.
    When you cannot ask, for example in a one-shot or delegated run, do not wait. Make the choices yourself, and state them in the report header.
 2. **Find out what evidence you can collect.** Network access, the repository, and any data the user can share:
    - a Search Console export (queries and pages);
-   - field data;
+   - field data: a CrUX API key in the `CRUX_API_KEY` environment variable, or a PageSpeed Insights result (check 8.1);
    - for content checks, the query the page targets and the top results for it.
 
    Say up front which checks will be "not verified" for lack of them.

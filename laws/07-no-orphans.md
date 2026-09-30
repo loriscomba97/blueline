@@ -32,7 +32,7 @@ Report:
 
 - generic anchors: "click here", "read more", "this", "here";
 - bare URLs used as anchors in body copy;
-- the same anchor text pointing at different targets;
+- the same anchor text pointing at different targets inside the body copy. Menus, footers and cards reuse product names on purpose, so `links.mjs` counts only links inside the text;
 - links chained next to each other with no text between them.
 
 ### 7.3 Links point at live, canonical URLs

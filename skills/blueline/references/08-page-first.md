@@ -24,14 +24,19 @@
 
 **Where:** live URL · **Default severity:** fix soon when a metric is poor; blocker when the page is unusable on mobile
 
-When field data exists, report LCP, INP and CLS at the 75th percentile for the page and the origin, with the date of the data. Field data is the Chrome UX Report, available through PageSpeed Insights or its API.
+When field data exists, report LCP, INP and CLS at the 75th percentile for the page and the origin, on phones and on desktop, with the dates the data covers. Field data is the Chrome UX Report (CrUX): real Chrome visits, averaged over the last 28 days, updated daily and about two days behind. **Google says** it plans to stop including this data in the PageSpeed Insights API, and recommends the CrUX API instead ([PageSpeed Insights API](https://developers.google.com/speed/docs/insights/v5/get-started), [CrUX API](https://developer.chrome.com/docs/crux/api)).
+
+The CrUX API needs a Google Cloud API key. Read it from an environment variable, and never print it:
 
 ```bash
-curl -s "https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=https://www.example.com/&strategy=mobile" \
-  | node -e 'let s="";process.stdin.on("data",(d)=>(s+=d)).on("end",()=>{const m=JSON.parse(s).loadingExperience?.metrics??{};for(const[k,v]of Object.entries(m))console.log(k,v.percentile,v.category)})'
+curl -s -X POST "https://chromeuxreport.googleapis.com/v1/records:queryRecord?key=$CRUX_API_KEY" \
+  -H 'Content-Type: application/json' -d '{"origin": "https://www.example.com", "formFactor": "PHONE"}' \
+  | node -e 'let s="";process.stdin.on("data",(d)=>(s+=d)).on("end",()=>{const r=JSON.parse(s);if(r.error)return console.log(r.error.code,r.error.message);const{metrics:m,collectionPeriod:c}=r.record;const d=(x)=>[x.year,x.month,x.day].join("-");console.log("from",d(c.firstDate),"to",d(c.lastDate));for(const k of["largest_contentful_paint","interaction_to_next_paint","cumulative_layout_shift"])console.log(k,m[k]?.percentiles.p75??"no data")})'
 ```
 
-The API reports CLS multiplied by 100: a percentile of `5` means a CLS of 0.05. When there is no field data (small sites often have none), say so. A lab run (Lighthouse) is useful for finding causes, but it is not what visitors experience. Label it as lab data. Never estimate a score.
+For one page, replace `"origin": "https://www.example.com"` with `"url": "https://www.example.com/pricing"`. For desktop, replace `PHONE` with `DESKTOP`. An answer `404 chrome ux report data not found` means CrUX has no data for that origin or page: small sites often have none, and the report says so.
+
+Without a key, open [PageSpeed Insights](https://pagespeed.web.dev/) in a browser, or ask the user for its result. When neither is possible, 8.1 is not verified. A lab run (Lighthouse) is useful for finding causes, but it is not what visitors experience: label it as lab data. Never estimate a score.
 
 ### 8.2 Nothing from another origin blocks the first render
 
@@ -173,6 +178,8 @@ Events pushed to the data layer before the script loads are kept and replayed wh
 Checked on 30 September 2026.
 
 - web.dev: [Web Vitals](https://web.dev/articles/vitals)
+- Chrome for Developers: [CrUX API](https://developer.chrome.com/docs/crux/api)
+- Google for Developers: [Get started with the PageSpeed Insights API](https://developers.google.com/speed/docs/insights/v5/get-started)
 - Google Search Central: [Understanding page experience in Google Search results](https://developers.google.com/search/docs/appearance/page-experience)
 - web.dev: [Optimize Largest Contentful Paint](https://web.dev/articles/optimize-lcp)
 - web.dev: [Optimize resource loading with the Fetch Priority API](https://web.dev/articles/fetch-priority)

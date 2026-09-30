@@ -105,6 +105,8 @@ test('the content of the page is read apart from navigation and footer', () => {
   assert.deepEqual(page.main.headings.map((h) => h.text), ['How to plan a week', 'Owners']);
   assert.equal(page.main.paragraphs.length, 2);
   assert.ok(page.main.wordCount < page.wordCount);
+  const links = Object.fromEntries(page.anchors.map((a) => [a.text, a.chrome]));
+  assert.deepEqual(links, { Home: true, 'Pricing and plans for teams': true });
 });
 
 test('noindex in all its spellings', () => {
@@ -228,9 +230,10 @@ test('the link summary sets template links apart and finds orphans, broken links
     ...filler,
     { url: `${site}/`, status: 200, final: `${site}/`, links: [...nav, { url: `${site}/blog/a`, text: 'How we price projects' }] },
     { url: `${site}/pricing`, status: 200, final: `${site}/pricing`, links: nav },
-    { url: `${site}/blog/a`, status: 200, final: `${site}/blog/a`, links: [...nav, { url: `${site}/blog/b#top`, text: 'Pricing a website' }, { url: `${site}/old`, text: 'read more' }, { url: `${site}/blog/c`, text: 'a very long anchor that goes on and on for many more words than anyone needs', inText: true }] },
-    { url: `${site}/blog/b`, status: 200, final: `${site}/blog/b`, links: [...nav, { url: `${site}/gone`, text: 'The old checklist' }] },
-    { url: `${site}/blog/c`, status: 200, final: `${site}/blog/c`, links: nav },
+    { url: `${site}/blog/a`, status: 200, final: `${site}/blog/a`, links: [...nav, { url: `${site}/blog/b#top`, text: 'Pricing a website', inText: true }, { url: `${site}/old`, text: 'read more' }, { url: `${site}/blog/c`, text: 'a very long anchor that goes on and on for many more words than anyone needs', inText: true }] },
+    { url: `${site}/blog/e`, status: 200, final: `${site}/blog/e`, links: [...nav, { url: `${site}/blog/a`, text: 'Pricing a website', inText: true }, { url: `${site}/blog/c`, text: 'Pricing', inText: true, chrome: true }] },
+    { url: `${site}/blog/b`, status: 200, final: `${site}/blog/b`, links: [...nav, { url: `${site}/gone`, text: 'The old checklist' }, { url: `${site}/pricing`, text: 'Pricing', inText: true }] },
+    { url: `${site}/blog/c`, status: 200, final: `${site}/blog/c`, links: [...nav, { url: 'http://www.example.com/blog/a', text: 'Planning a week', inText: true }, { url: `${site}/blog/a`, text: 'Planning a week', inText: true }] },
     { url: `${site}/old`, status: 200, final: `${site}/blog/c`, links: [] },
     { url: `${site}/gone`, status: 404, final: `${site}/gone`, links: [] },
   ];
@@ -241,6 +244,7 @@ test('the link summary sets template links apart and finds orphans, broken links
   assert.deepEqual(summary.redirected.map((r) => [r.target, r.final]), [[`${site}/old`, `${site}/blog/c`]]);
   assert.equal(summary.genericAnchors.length, 1);
   assert.equal(summary.longAnchors.length, 1);
+  assert.deepEqual(summary.ambiguousAnchors.map((a) => a.text), ['pricing a website']);
   assert.equal(summary.inbound[`${site}/blog/b`], 1);
 
   const withFiles = summarizeLinks(

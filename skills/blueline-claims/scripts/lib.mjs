@@ -191,6 +191,20 @@ export function scanTags(html) {
 }
 
 const stripComments = (html) => html.replace(/<!--[\s\S]*?-->/g, ' ');
+/** Where each outermost element among `names` starts and ends in `html`, nested ones inside their parent. */
+function rangesOf(html, names) {
+  const ranges = [];
+  const open = [];
+  for (const m of html.matchAll(new RegExp(`<(/?)(?:${names.join('|')})\\b[^>]*>`, 'gi'))) {
+    if (!m[1]) open.push(m.index);
+    else if (open.length) {
+      const start = open.pop();
+      if (!open.length) ranges.push([start, m.index + m[0].length]);
+    }
+  }
+  return ranges;
+}
+
 const withoutBlocks = (html, names) => html.replace(new RegExp(`<(${names.join('|')})\\b[\\s\\S]*?<\\/\\1\\s*>`, 'gi'), ' ');
 
 /** Plain text of a fragment, tags removed, entities decoded, whitespace collapsed. */
@@ -366,6 +380,8 @@ export function analyzeHtml(rawHtml, url) {
     };
     return lastOf(TEXT_OPEN) > lastOf(TEXT_CLOSE);
   };
+  // Navigation, header, footer and sidebars: the page's frame, repeated around its own content.
+  const chrome = rangesOf(content, ['nav', 'header', 'footer', 'aside']);
   const anchors = [...content.matchAll(ANCHOR)].map((m) => {
     const attrs = parseAttributes(m[1]);
     const inner = m[2];
@@ -389,6 +405,7 @@ export function analyzeHtml(rawHtml, url) {
       // A link around a whole card (a heading, a paragraph, an image) is not a link inside a sentence.
       block: /<(?:h[1-6]|p|div|li|ul|img|figure|section|article)\b/i.test(inner),
       inText: insideText(m.index),
+      chrome: chrome.some(([start, end]) => m.index >= start && m.index < end),
     };
   });
 
@@ -791,7 +808,7 @@ export function summarizeLinks(pages, { sitemapUrls = [], files = [] } = {}) {
     }
     for (const link of page.links) {
       const target = normalizeLink(link.url);
-      if (target && target !== page.url) instances.push({ source: page.url, target, text: link.text, block: Boolean(link.block), inText: Boolean(link.inText) });
+      if (target && target !== page.url) instances.push({ source: page.url, target, text: link.text, block: Boolean(link.block), inText: Boolean(link.inText), chrome: Boolean(link.chrome) });
     }
   }
   // A link present on at least 80% of the pages that have links belongs to the template (navigation,
@@ -822,11 +839,15 @@ export function summarizeLinks(pages, { sitemapUrls = [], files = [] } = {}) {
 
   const orphans = sitemapUrls.filter((u) => inboundCount(normalizeLink(u)) === 0);
   const texts = new Map();
-  for (const { target, text } of instances) {
+  // Ambiguity matters in the body copy, where an anchor promises a destination; menus and cards reuse product names on purpose.
+  // Host variants of one page (http, www) count as one target here: check 2.3 reports them.
+  const pageKey = (u) => u.replace(/^https?:\/\/(?:www\.)?/i, '');
+  for (const { target, text, inText, chrome } of instances) {
+    if (!inText || chrome) continue;
     const t = text.trim().toLowerCase();
     if (!t || GENERIC_ANCHORS.has(t)) continue;
-    if (!texts.has(t)) texts.set(t, new Set());
-    texts.get(t).add(target);
+    if (!texts.has(t)) texts.set(t, new Map());
+    if (!texts.get(t).has(pageKey(target))) texts.get(t).set(pageKey(target), target);
   }
   const ranked = [...contentInbound].sort((a, b) => b[1] - a[1]);
   const contentTotal = ranked.reduce((sum, [, n]) => sum + n, 0);
@@ -841,7 +862,7 @@ export function summarizeLinks(pages, { sitemapUrls = [], files = [] } = {}) {
     redirected,
     genericAnchors: instances.filter((i) => GENERIC_ANCHORS.has(i.text.trim().toLowerCase())).map((i) => ({ source: i.source, target: i.target, text: i.text })),
     longAnchors: instances.filter((i) => i.inText && !i.block && i.text.split(/\s+/).filter(Boolean).length > 12).map((i) => ({ source: i.source, target: i.target, text: i.text.slice(0, 80) })),
-    ambiguousAnchors: [...texts].filter(([, targets]) => targets.size > 1).map(([text, targets]) => ({ text, targets: [...targets].slice(0, 4) })),
+    ambiguousAnchors: [...texts].filter(([, targets]) => targets.size > 1).map(([text, targets]) => ({ text, targets: [...targets.values()].slice(0, 4) })),
   };
 }
 

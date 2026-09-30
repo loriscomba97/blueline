@@ -63,7 +63,10 @@ if (page.descriptions.length !== 1) signals.push(signal('1.2', `${page.descripti
 if (page.canonicals.length !== 1) signals.push(signal('1.2', `${page.canonicals.length} canonical link elements`));
 if (page.canonicals.length && page.canonicalsInHead === 0) signals.push(signal('1.2', 'the canonical link is outside <head>'));
 const jsOnly = page.anchors.filter((a) => a.jsOnly);
-if (jsOnly.length) signals.push(signal('1.4', `${jsOnly.length} links without a real URL (href="#", javascript: or onclick only)`));
+if (jsOnly.length) {
+  const examples = [...new Set(jsOnly.map((a) => a.text.slice(0, 60)).filter(Boolean))].slice(0, 3).map((t) => `"${t}"`).join(', ');
+  signals.push(signal('1.4', `${jsOnly.length} links without a real URL (href="#", javascript: or onclick only)${examples ? `, for example ${examples}` : ''}. A link that promises a page that does not exist yet belongs under 5.3`));
+}
 const brokenJsonld = page.jsonld.filter((j) => !j.ok);
 if (brokenJsonld.length) signals.push(signal('1.5', `${brokenJsonld.length} JSON-LD blocks do not parse: ${brokenJsonld.map((j) => j.error).join('; ')}`));
 
@@ -127,7 +130,10 @@ if (final.ttfbMs > 1000) signals.push(signal('8.9', `first byte after ${final.tt
 const noDimensions = page.images.filter((i) => !i.width || !i.height);
 if (noDimensions.length) {
   const sizedClasses = await cssSizes(page, pageOrigin);
-  const unsized = noDimensions.filter((i) => !/aspect-ratio/i.test(i.style) && ![...i.class.split(/\s+/), ...i.context].some((c) => sizedClasses.has(c)));
+  // An image positioned absolutely or fixed is out of the flow: it cannot push anything when it loads.
+  const unsized = noDimensions.filter(
+    (i) => !/aspect-ratio|position\s*:\s*(?:absolute|fixed)/i.test(i.style) && ![...i.class.split(/\s+/), ...i.context].some((c) => sizedClasses.has(c)),
+  );
   if (unsized.length) {
     signals.push(signal('9.3', `${unsized.length} of ${page.images.length} images have no width and height, and no CSS rule reserving their space was found for their classes: ${unsized.slice(0, 3).map((i) => i.src).join(', ')}`));
   }

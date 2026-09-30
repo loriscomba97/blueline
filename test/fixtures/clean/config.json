@@ -17,6 +17,11 @@
       "width": 1200,
       "height": 630,
       "bytes": 30000
+    },
+    "/assets/check.png": {
+      "width": 192,
+      "height": 192,
+      "bytes": 3000
     }
   }
 }

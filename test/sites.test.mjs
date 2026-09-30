@@ -96,11 +96,15 @@ test('links.mjs finds the orphan, the broken link, the redirect and the weak anc
   assert.deepEqual(r.orphans, [`${broken.origin}/blog/orphan`]);
   assert.deepEqual(r.broken.map((b) => b.target).sort(), [`${broken.origin}/assets/brochure.pdf`, `${broken.origin}/gone`]);
   assert.equal(r.filesChecked, 1);
+  assert.ok(r.noindexPages.includes(`${broken.origin}/blog/post`), 'the pages kept out of the index are named');
 });
 
 test('assets.mjs finds heavy and oversized images, short caching, an undeclared AI image and a missing file', async () => {
   const r = await script('assets.mjs', `${broken.origin}/blog/post`);
   assertChecks(r, ['9.1', '9.2', '9.6', '5.8', '8.2', '3.5'], 'assets');
+  const messages = r.signals.map((s) => s.message);
+  assert.equal(messages.length, new Set(messages).size, 'an image shown twice is reported once');
+  assert.equal(r.images.filter((i) => i.url.endsWith('/assets/hero.png')).length, 1);
   const hero = r.images.find((i) => i.url.endsWith('/assets/hero.png'));
   assert.equal(hero.intrinsic, '3000x2000');
   assert.equal(hero.declared, '300x200');

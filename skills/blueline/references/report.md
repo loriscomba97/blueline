@@ -14,6 +14,7 @@ Every blueline review has the same shape, so a reader can compare two reviews at
    A finding without evidence is not reported.
 2. **File it under the check written for it.** Every problem goes under the most specific check that describes it, and mentions the other checks it touches. When two checks fit, these win:
    - `noindex` in a meta tag or a header, and staging settings: 10.1;
+   - a link to `#` that promises a page that does not exist yet ("Read more"): 5.3; a link that navigates only with JavaScript: 1.4;
    - `robots.txt`, its rules and its status: 10.2;
    - missing image or video dimensions: 9.3;
    - a missing or wrong canonical: 2.2;
@@ -103,7 +104,7 @@ Sources in the references checked on 30 September 2026
 
 | Check | Why not | What would settle it |
 |---|---|---|
-| 8.1 | No field data for this origin | Run the PageSpeed Insights API on the home page once the site has traffic |
+| 8.1 | No CrUX API key and no browser in this session | Run the CrUX API query of check 8.1 with a key, or open PageSpeed Insights in a browser |
 
 ## What holds
 

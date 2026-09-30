@@ -24,7 +24,7 @@ It lives at a permanent URL that browsers may cache for a year, and changing it 
 
 **Where:** live URL · **Default severity:** fix soon
 
-For each image, compare its intrinsic width with the width it is displayed at on a desktop layout. Report images more than twice as wide as their largest display size (our rule).
+For each image, compare its intrinsic width with the width it is displayed at on a desktop layout. Report images more than twice as wide as their largest display size, when the file weighs more than about 30 KB: below that, the waste is a few kilobytes (our rule).
 
 Also report, by our rules:
 - content images over about 250 KB;
@@ -54,7 +54,7 @@ Keep PNG or SVG for flat graphics, screenshots with text, and images that need s
 
 **Where:** live URL · **Default severity:** fix soon
 
-Every `<img>`, `<video>` and `<iframe>` has `width` and `height` attributes, or its space is reserved by CSS: an `aspect-ratio`, or a fixed height on its container. `page.mjs` reads the site's stylesheets for both before it reports an image.
+Every `<img>`, `<video>` and `<iframe>` has `width` and `height` attributes, or its space is reserved by CSS: an `aspect-ratio`, or a fixed height on its container. `page.mjs` reads the site's stylesheets for both before it reports an image. An element positioned `absolute` or `fixed` is out of the flow and cannot push other content when it loads, so `page.mjs` skips it when its inline style says so (our rule).
 
 ```bash
 grep -oiE '<img[^>]*>' page.html | grep -viE 'width=' | head

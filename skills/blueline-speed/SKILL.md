@@ -30,7 +30,7 @@ How to write the review: [report.md](references/report.md).
    - any page the user says is slow.
 
    When you cannot ask, make the choices yourself and state them in the report header.
-3. **Real-user data first.** Check 8.1 reads field data from the Chrome UX Report through the PageSpeed Insights API: the command is in the reference. Report what it returns, with its date. When there is none, say so. Never estimate a score.
+3. **Real-user data first.** Check 8.1 reads field data from the Chrome UX Report through the CrUX API, which needs an API key: the command is in the reference. Without a key, use PageSpeed Insights in a browser. Report what it returns, with its dates. When there is none, say so. Never estimate a score.
 
 ## Collect evidence
 

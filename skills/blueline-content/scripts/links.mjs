@@ -47,7 +47,7 @@ const queue = [normalizeLink(start.href)];
 const queued = new Set(queue);
 const pages = [];
 const fileLinks = new Set();
-let noindexPages = 0;
+const noindexPages = [];
 const otherHosts = new Map();
 while (queue.length && pages.length < limit) {
   const url = queue.shift();
@@ -59,15 +59,18 @@ while (queue.length && pages.length < limit) {
   if (final.status !== 200 || !/html/i.test(final.headers?.['content-type'] ?? '')) continue;
   if (chain.length > 1 && new URL(finalUrl).host !== start.host) continue;
   const page = analyzeHtml(final.body, final.url);
-  if (isNoindex([...page.robots, final.headers['x-robots-tag'] ?? ''])) noindexPages++;
+  if (isNoindex([...page.robots, final.headers['x-robots-tag'] ?? ''])) noindexPages.push(finalUrl);
   for (const anchor of page.anchors) {
     if (!anchor.internal || !anchor.url || /\bnofollow\b/i.test(anchor.rel)) continue;
     const target = normalizeLink(anchor.url);
     if (!target) continue;
-    record.links.push({ url: target, text: anchor.text, block: anchor.block, inText: anchor.inText });
+    record.links.push({ url: target, text: anchor.text, block: anchor.block, inText: anchor.inText, chrome: anchor.chrome });
     const host = new URL(target).host;
     if (host !== start.host) {
-      otherHosts.set(host, (otherHosts.get(host) ?? 0) + 1);
+      const entry = otherHosts.get(host) ?? { links: 0, examples: [] };
+      entry.links++;
+      if (entry.examples.length < 3 && !entry.examples.some((e) => e.target === target)) entry.examples.push({ target, from: url });
+      otherHosts.set(host, entry);
       continue;
     }
     if (isFileUrl(target)) fileLinks.add(target);
@@ -100,11 +103,16 @@ if (summary.orphans.length) {
   const how = uncrawled ? 'candidates, because the crawl stopped early' : 'the crawl reached every linked page';
   signals.push({ check: '7.1', message: `${summary.orphans.length} sitemap URLs have no inbound link from the ${summary.pages} crawled pages (${how}): ${summary.orphans.slice(0, 5).join(', ')}` });
 }
-if (noindexPages) signals.push({ check: '10.1', message: `${noindexPages} of ${summary.pages} crawled pages carry noindex: links to them count for nothing in search` });
+if (noindexPages.length) {
+  signals.push({ check: '10.1', message: `${noindexPages.length} of ${summary.pages} crawled pages carry noindex, so search engines keep them out of the index: ${noindexPages.slice(0, 5).join(', ')} (is each one deliberate?)` });
+}
 if (robotsRules && !isAllowed(rulesFor(robotsRules, '*').rules, '/')) signals.push({ check: '10.2', message: 'robots.txt disallows "/" for every crawler without its own group: search engines cannot follow any of these links' });
 if (summary.broken.length) signals.push({ check: '3.5', message: `${summary.broken.length} internal links answer an error: ${summary.broken.slice(0, 5).map((b) => `${b.target} (${b.status || 'no answer'})`).join(', ')}` });
 if (summary.redirected.length) signals.push({ check: '7.3', message: `${summary.redirected.length} internal links go through a redirect: ${summary.redirected.slice(0, 5).map((r) => `${r.target} -> ${r.final}`).join(', ')}` });
-if (otherHosts.size) signals.push({ check: '2.3', message: `internal links point at other host variants: ${[...otherHosts].map(([h, n]) => `${h} (${n})`).join(', ')}` });
+if (otherHosts.size) {
+  const hosts = [...otherHosts].map(([h, { links, examples }]) => `${h} (${links} links, for example ${examples[0].target} on ${examples[0].from})`);
+  signals.push({ check: '2.3', message: `internal links point at other host variants: ${hosts.join('; ')}` });
+}
 if (summary.genericAnchors.length) signals.push({ check: '7.2', message: `${summary.genericAnchors.length} internal links use generic anchor text such as "${summary.genericAnchors[0].text}"` });
 if (summary.longAnchors.length) signals.push({ check: '7.2', message: `${summary.longAnchors.length} links inside the text have anchors longer than 12 words (our rule: two to eight)` });
 if (summary.ambiguousAnchors.length) signals.push({ check: '7.2', message: `${summary.ambiguousAnchors.length} anchor texts point at different targets, for example "${summary.ambiguousAnchors[0].text}"` });
@@ -119,6 +127,8 @@ print({
   queuedButNotCrawled: uncrawled,
   filesChecked: files.length,
   sitemapUrls: sitemapUrls.length,
+  noindexPages,
+  otherHosts: Object.fromEntries(otherHosts),
   ...summary,
   signals,
 });

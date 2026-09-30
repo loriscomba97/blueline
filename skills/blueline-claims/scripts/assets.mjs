@@ -64,7 +64,14 @@ if (thirdParty.length) signals.push({ check: '8.2', message: `scripts from ${thi
 
 // Images
 const images = [];
-for (const img of page.images.filter((i) => i.src).slice(0, maxImages)) {
+// A file shown more than once (a logo strip repeated for a marquee) is one download: it is measured
+// once, against the largest width it is declared at.
+const bySrc = new Map();
+for (const img of page.images.filter((i) => i.src)) {
+  const known = bySrc.get(img.src);
+  if (!known || (Number(img.width) || 0) > (Number(known.width) || 0)) bySrc.set(img.src, img);
+}
+for (const img of [...bySrc.values()].slice(0, maxImages)) {
   const res = await measure(img.src, { binary: true });
   const info = res.status === 200 ? imageInfo(res.body) : { format: 'unknown', width: null, height: null, digitalSourceType: null, c2pa: false };
   const declared = Number(img.width) || null;
@@ -84,7 +91,8 @@ for (const img of page.images.filter((i) => i.src).slice(0, maxImages)) {
   };
   images.push(row);
 
-  if (declared && info.width && info.format !== 'svg' && info.width > 2 * declared) {
+  // Below about 30 KB, a file too wide for its place wastes a few kilobytes: not worth a finding (our rule).
+  if (declared && info.width && info.format !== 'svg' && info.width > 2 * declared && row.bytes > 30 * 1024) {
     signals.push({ check: '9.1', message: `${img.src} is ${info.width} px wide for a declared width of ${declared} px (our rule: at most twice)` });
   }
   if (info.format !== 'svg' && row.bytes > 250 * 1024) signals.push({ check: '9.1', message: `${img.src} weighs ${kb(row.bytes)} (our rule: about 250 KB for a content image)` });
