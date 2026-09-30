@@ -540,6 +540,179 @@ export function parseSitemap(bufferOrText) {
 }
 
 // ---------------------------------------------------------------------------------------------
+// Images, read from their bytes
+
+/**
+ * Format and intrinsic size of an image from its bytes (PNG, GIF, JPEG, WebP, AVIF, SVG), plus the
+ * provenance metadata that law 5 cares about: the IPTC digital source type and a C2PA manifest.
+ */
+export function imageInfo(bytes) {
+  const b = Buffer.isBuffer(bytes) ? bytes : Buffer.from(bytes ?? []);
+  const info = { format: 'unknown', width: null, height: null };
+  const ascii = (start, end) => b.toString('latin1', start, end);
+  try {
+    if (b.length >= 24 && b.readUInt32BE(0) === 0x89504e47) {
+      Object.assign(info, { format: 'png', width: b.readUInt32BE(16), height: b.readUInt32BE(20) });
+    } else if (b.length >= 10 && ascii(0, 3) === 'GIF') {
+      Object.assign(info, { format: 'gif', width: b.readUInt16LE(6), height: b.readUInt16LE(8) });
+    } else if (b.length >= 4 && b[0] === 0xff && b[1] === 0xd8) {
+      info.format = 'jpeg';
+      let i = 2;
+      while (i + 9 < b.length) {
+        if (b[i] !== 0xff) {
+          i++;
+          continue;
+        }
+        const marker = b[i + 1];
+        if (marker === 0xd8 || marker === 0x01 || marker === 0xff || (marker >= 0xd0 && marker <= 0xd7)) {
+          i += marker === 0xff ? 1 : 2;
+          continue;
+        }
+        const isFrame = marker >= 0xc0 && marker <= 0xcf && ![0xc4, 0xc8, 0xcc].includes(marker);
+        if (isFrame) {
+          info.height = b.readUInt16BE(i + 5);
+          info.width = b.readUInt16BE(i + 7);
+          break;
+        }
+        i += 2 + b.readUInt16BE(i + 2);
+      }
+    } else if (b.length >= 30 && ascii(0, 4) === 'RIFF' && ascii(8, 12) === 'WEBP') {
+      info.format = 'webp';
+      const chunk = ascii(12, 16);
+      if (chunk === 'VP8 ') Object.assign(info, { width: b.readUInt16LE(26) & 0x3fff, height: b.readUInt16LE(28) & 0x3fff });
+      else if (chunk === 'VP8L') {
+        const bits = b.readUInt32LE(21);
+        Object.assign(info, { width: (bits & 0x3fff) + 1, height: ((bits >>> 14) & 0x3fff) + 1 });
+      } else if (chunk === 'VP8X') Object.assign(info, { width: 1 + b.readUIntLE(24, 3), height: 1 + b.readUIntLE(27, 3) });
+    } else if (b.length >= 12 && ascii(4, 8) === 'ftyp' && /avi[fs]/.test(ascii(8, 12))) {
+      info.format = 'avif';
+      const at = b.indexOf('ispe');
+      if (at > 0 && at + 16 <= b.length) Object.assign(info, { width: b.readUInt32BE(at + 8), height: b.readUInt32BE(at + 12) });
+    } else {
+      const head = b.toString('utf8', 0, Math.min(b.length, 4000));
+      const tag = head.match(/<svg\b[^>]*>/i)?.[0];
+      if (tag) {
+        info.format = 'svg';
+        const number = (name) => {
+          const m = tag.match(new RegExp(`\\s${name}\\s*=\\s*["']?([\\d.]+)(px)?["'\\s>]`, 'i'));
+          return m ? Number(m[1]) : null;
+        };
+        info.width = number('width');
+        info.height = number('height');
+        const box = tag.match(/viewBox\s*=\s*["']\s*[-\d.]+[\s,]+[-\d.]+[\s,]+([\d.]+)[\s,]+([\d.]+)/i);
+        if (!info.width && box) Object.assign(info, { width: Number(box[1]), height: Number(box[2]) });
+      }
+    }
+  } catch {
+    // A truncated or unusual file: keep what was read.
+  }
+  const text = b.toString('latin1');
+  const source = text.match(/DigitalSourceType\s*(?:=\s*["']|>)\s*(?:https?:\/\/cv\.iptc\.org\/newscodes\/digitalsourcetype\/)?([A-Za-z]+)/);
+  info.digitalSourceType = source ? source[1] : null;
+  info.c2pa = /c2pa/.test(text);
+  return info;
+}
+
+// ---------------------------------------------------------------------------------------------
+// Internal links, as a graph
+
+/** A link target as the crawler compares it: no fragment, no utm_ tracking parameters. */
+export function normalizeLink(href) {
+  try {
+    const url = new URL(href);
+    url.hash = '';
+    for (const key of [...url.searchParams.keys()]) if (/^utm_/i.test(key)) url.searchParams.delete(key);
+    return url.href;
+  } catch {
+    return null;
+  }
+}
+
+export function sameSite(a, b) {
+  try {
+    return siteOf(new URL(a).host) === siteOf(new URL(b).host);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Summarizes crawled pages ([{ url, status, final, links: [{ url, text }] }]) into the facts of law 7:
+ * inbound links per URL, the links repeated on almost every page (navigation and footer), broken
+ * and redirected targets, and anchor text problems.
+ */
+export function summarizeLinks(pages, { sitemapUrls = [] } = {}) {
+  const ok = pages.filter((p) => p.status === 200);
+  const byUrl = new Map(pages.map((p) => [p.url, p]));
+  const pagesLinking = new Map();
+  const presence = new Map();
+  const instances = [];
+  for (const page of ok) {
+    const seen = new Set();
+    for (const link of page.links) {
+      const target = normalizeLink(link.url);
+      if (!target || seen.has(target)) continue;
+      seen.add(target);
+      presence.set(target, (presence.get(target) ?? 0) + 1);
+      if (target !== page.url) pagesLinking.set(target, (pagesLinking.get(target) ?? 0) + 1);
+    }
+    for (const link of page.links) {
+      const target = normalizeLink(link.url);
+      if (target && target !== page.url) instances.push({ source: page.url, target, text: link.text });
+    }
+  }
+  // A link present on at least 80% of the pages that have links belongs to the template (navigation,
+  // footer, a sidebar). Our rule, and only with ten such pages or more: on a smaller site every page
+  // may link to every other one.
+  const linking = ok.filter((p) => p.links.length).length;
+  const templateTargets = new Set(linking >= 10 ? [...presence].filter(([, n]) => n / linking >= 0.8).map(([t]) => t) : []);
+  // Content links: one per linking page and target, template links left out.
+  const pairs = new Set();
+  const contentInbound = new Map();
+  for (const { source, target } of instances) {
+    const key = `${source} ${target}`;
+    if (pairs.has(key)) continue;
+    pairs.add(key);
+    if (!templateTargets.has(target)) contentInbound.set(target, (contentInbound.get(target) ?? 0) + 1);
+  }
+  const inboundCount = (url) => pagesLinking.get(url) ?? 0;
+
+  const broken = [];
+  const redirected = [];
+  for (const target of pagesLinking.keys()) {
+    const page = byUrl.get(target);
+    if (!page) continue;
+    const from = [...new Set(instances.filter((i) => i.target === target).map((i) => i.source))].slice(0, 3);
+    if (page.status === 0 || page.status >= 400) broken.push({ target, status: page.status, linkedFrom: from });
+    else if (page.final && page.final !== target) redirected.push({ target, final: page.final, linkedFrom: from });
+  }
+
+  const orphans = sitemapUrls.filter((u) => inboundCount(normalizeLink(u)) === 0);
+  const texts = new Map();
+  for (const { target, text } of instances) {
+    const t = text.trim().toLowerCase();
+    if (!t || GENERIC_ANCHORS.has(t)) continue;
+    if (!texts.has(t)) texts.set(t, new Set());
+    texts.get(t).add(target);
+  }
+  const ranked = [...contentInbound].sort((a, b) => b[1] - a[1]);
+  const contentTotal = ranked.reduce((sum, [, n]) => sum + n, 0);
+  return {
+    pages: ok.length,
+    templateLinks: [...templateTargets],
+    inbound: Object.fromEntries([...pagesLinking].sort((a, b) => b[1] - a[1])),
+    topContentTargets: ranked.slice(0, 5).map(([url, n]) => ({ url, inbound: n, share: contentTotal ? Math.round((n / contentTotal) * 100) : 0 })),
+    contentLinks: contentTotal,
+    orphans,
+    broken,
+    redirected,
+    genericAnchors: instances.filter((i) => GENERIC_ANCHORS.has(i.text.trim().toLowerCase())).map((i) => ({ source: i.source, target: i.target, text: i.text })),
+    longAnchors: instances.filter((i) => i.text.split(/\s+/).filter(Boolean).length > 12).map((i) => ({ source: i.source, target: i.target, text: i.text.slice(0, 80) })),
+    ambiguousAnchors: [...texts].filter(([, targets]) => targets.size > 1).map(([text, targets]) => ({ text, targets: [...targets].slice(0, 4) })),
+  };
+}
+
+// ---------------------------------------------------------------------------------------------
 // Output
 
 /** Prints the result as JSON. Scripts report facts and signals; the reviewer decides what is a finding. */

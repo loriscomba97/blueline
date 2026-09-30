@@ -5,6 +5,8 @@ import { gzipSync } from 'node:zlib';
 import {
   analyzeHtml,
   aspectRatioClasses,
+  imageInfo,
+  summarizeLinks,
   decodeEntities,
   isAllowed,
   isExpiringUrl,
@@ -158,4 +160,60 @@ test('expiring links, sampling and URL parsing', () => {
   assert.deepEqual(spread([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 3), [1, 6, 10]);
   assert.equal(toHttpUrl('example.com/x#top').href, 'https://example.com/x');
   assert.throws(() => toHttpUrl('file:///etc/passwd'));
+});
+
+test('image formats, intrinsic sizes and provenance metadata are read from the bytes', () => {
+  const png = Buffer.alloc(24);
+  Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]).copy(png, 0);
+  png.write('IHDR', 12, 'latin1');
+  png.writeUInt32BE(1200, 16);
+  png.writeUInt32BE(630, 20);
+  assert.deepEqual([imageInfo(png).format, imageInfo(png).width, imageInfo(png).height], ['png', 1200, 630]);
+
+  const gif = Buffer.alloc(10);
+  gif.write('GIF89a', 0, 'latin1');
+  gif.writeUInt16LE(320, 6);
+  gif.writeUInt16LE(200, 8);
+  assert.deepEqual([imageInfo(gif).width, imageInfo(gif).height], [320, 200]);
+
+  const jpeg = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x04, 0x00, 0x00, 0xff, 0xc0, 0x00, 0x11, 0x08, 0x02, 0x58, 0x03, 0x20, 0x03, 0, 0, 0, 0, 0, 0]);
+  assert.deepEqual([imageInfo(jpeg).format, imageInfo(jpeg).width, imageInfo(jpeg).height], ['jpeg', 800, 600]);
+
+  const webp = Buffer.alloc(30);
+  webp.write('RIFF', 0, 'latin1');
+  webp.write('WEBP', 8, 'latin1');
+  webp.write('VP8X', 12, 'latin1');
+  webp.writeUIntLE(1919, 24, 3);
+  webp.writeUIntLE(1079, 27, 3);
+  assert.deepEqual([imageInfo(webp).format, imageInfo(webp).width, imageInfo(webp).height], ['webp', 1920, 1080]);
+
+  const svg = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630"><rect/></svg>');
+  assert.deepEqual([imageInfo(svg).format, imageInfo(svg).width, imageInfo(svg).height], ['svg', 1200, 630]);
+
+  const tagged = Buffer.concat([png, Buffer.from('<x:xmpmeta><rdf:Description Iptc4xmpExt:DigitalSourceType="http://cv.iptc.org/newscodes/digitalsourcetype/trainedAlgorithmicMedia"/></x:xmpmeta>')]);
+  assert.equal(imageInfo(tagged).digitalSourceType, 'trainedAlgorithmicMedia');
+  assert.equal(imageInfo(png).digitalSourceType, null);
+});
+
+test('the link summary sets template links apart and finds orphans, broken links and redirects', () => {
+  const site = 'https://example.com';
+  const nav = [{ url: `${site}/`, text: 'Home' }, { url: `${site}/pricing`, text: 'Pricing' }];
+  const filler = Array.from({ length: 6 }, (_, i) => ({ url: `${site}/docs/${i}`, status: 200, final: `${site}/docs/${i}`, links: nav }));
+  const pages = [
+    ...filler,
+    { url: `${site}/`, status: 200, final: `${site}/`, links: [...nav, { url: `${site}/blog/a`, text: 'How we price projects' }] },
+    { url: `${site}/pricing`, status: 200, final: `${site}/pricing`, links: nav },
+    { url: `${site}/blog/a`, status: 200, final: `${site}/blog/a`, links: [...nav, { url: `${site}/blog/b#top`, text: 'Pricing a website' }, { url: `${site}/old`, text: 'read more' }] },
+    { url: `${site}/blog/b`, status: 200, final: `${site}/blog/b`, links: [...nav, { url: `${site}/gone`, text: 'The old checklist' }] },
+    { url: `${site}/blog/c`, status: 200, final: `${site}/blog/c`, links: nav },
+    { url: `${site}/old`, status: 200, final: `${site}/blog/c`, links: [] },
+    { url: `${site}/gone`, status: 404, final: `${site}/gone`, links: [] },
+  ];
+  const summary = summarizeLinks(pages, { sitemapUrls: [`${site}/blog/a`, `${site}/blog/c`, `${site}/blog/d`] });
+  assert.deepEqual(summary.templateLinks.sort(), [`${site}/`, `${site}/pricing`]);
+  assert.deepEqual(summary.orphans, [`${site}/blog/c`, `${site}/blog/d`]);
+  assert.deepEqual(summary.broken.map((b) => b.target), [`${site}/gone`]);
+  assert.deepEqual(summary.redirected.map((r) => [r.target, r.final]), [[`${site}/old`, `${site}/blog/c`]]);
+  assert.equal(summary.genericAnchors.length, 1);
+  assert.equal(summary.inbound[`${site}/blog/b`], 1);
 });
