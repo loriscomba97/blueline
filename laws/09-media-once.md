@@ -10,10 +10,10 @@ It lives at a permanent URL that browsers may cache for a year, and changing it 
 
 ## Why it matters
 
-- **Images are most of the weight of a typical marketing page.** An image encoded once at the right size saves every visitor the difference, on every visit.
-- **Declared dimensions reserve space**, so the layout does not jump when the file arrives.
-- **Modern formats such as WebP and AVIF** are much smaller than JPEG and PNG at the same quality, and Google Images supports both.
-- **Long caching makes repeat visits instant**, but only works when a changed file gets a new URL. Otherwise visitors keep the old file for a year.
+- **Images are usually the heaviest part of a marketing page** (our experience). An image encoded once at the right size saves every visitor the difference, on every visit.
+- **Declared dimensions reserve space**, so the layout does not jump when the file arrives. **web.dev says** to always set `width` and `height`, or reserve the space with `aspect-ratio` ([Optimize Cumulative Layout Shift](https://web.dev/articles/optimize-cls)).
+- **Modern formats such as WebP and AVIF** compress better than JPEG and PNG. **Google says** Google Images supports both ([Image SEO best practices](https://developers.google.com/search/docs/appearance/google-images)).
+- **Long caching makes repeat visits instant**, but only works when a changed file gets a new URL. **web.dev says** to cache versioned files for a year and change the URL to update them ([HTTP cache](https://web.dev/articles/http-cache)). Otherwise visitors keep the old file for a year.
 - **Signed file URLs expire.** Many CMSs and storage services hand out links that stop working after minutes or hours. A page that bakes one into its HTML shows a broken image to everyone who visits after the link expires.
 
 ## Checks
@@ -22,14 +22,14 @@ It lives at a permanent URL that browsers may cache for a year, and changing it 
 
 **Where:** live URL · **Default severity:** fix soon
 
-For each image, compare its intrinsic width with the width it is displayed at on a desktop layout. Report images more than twice as wide as their largest display size.
+For each image, compare its intrinsic width with the width it is displayed at on a desktop layout. Report images more than twice as wide as their largest display size (our rule).
 
-Also report:
+Also report, by our rules:
 - content images over about 250 KB;
 - logos and icons over about 30 KB;
 - decorative backgrounds shipped as photos where a CSS gradient would do.
 
-When the same image is shown much smaller on phones, one desktop-sized file can cost a phone two to four times the data it needs. Report large images that have no `srcset` and `sizes`.
+When the same image is shown much smaller on phones, one desktop-sized file wastes a phone's data: **Chrome's Lighthouse documentation says** desktop-sized images can use two to four times more data than needed on mobile ([Properly size images](https://developer.chrome.com/docs/lighthouse/performance/uses-responsive-images)). Report large images that have no `srcset` and `sizes`.
 
 In a browser console:
 
@@ -65,7 +65,7 @@ Report each element without declared dimensions.
 **Where:** live URL · **Default severity:** fix soon
 
 - Images outside the first screen carry `loading="lazy"` and `decoding="async"`.
-- Images likely to be visible on load are not lazy. The main one carries `fetchpriority="high"` ([law 8](08-page-first.md)).
+- Images likely to be visible on load are not lazy. **web.dev says** never to lazy-load them, the LCP image above all ([Browser-level image lazy loading](https://web.dev/articles/browser-level-image-lazy-loading)). The main one carries `fetchpriority="high"` ([law 8](08-page-first.md)).
 
 Report lazy-loaded hero images, and long pages that load every image eagerly.
 
@@ -73,8 +73,8 @@ Report lazy-loaded hero images, and long pages that load every image eagerly.
 
 **Where:** live URL, content · **Default severity:** fix soon
 
-- **Content images** are `<img>` elements. Google does not index images set as CSS backgrounds.
-- **Their alt text** describes what is in the image, in a plain sentence. About 80 to 125 characters is a good length. Never start with "Image of" or "Photo of", and never describe what is not visible.
+- **Content images** are `<img>` elements. **Google says:** "Google doesn't index CSS images" ([Image SEO best practices](https://developers.google.com/search/docs/appearance/google-images)).
+- **Their alt text** describes what is in the image, in a plain sentence. Our rule: about 80 to 125 characters, never starting with "Image of" or "Photo of", and never describing what is not visible.
 - **Decorative images**, and avatars next to the person's name, have `alt=""`.
 - **AI-generated images** are declared ([law 5](05-checkable-claims.md)).
 
@@ -125,7 +125,7 @@ Autoplay is muted, plays only while the video is on screen, and is off when the 
 Embeds from video platforms load lazily, or through a click-to-play preview. Report:
 
 - videos that download on page load;
-- clips that are heavy for their length (a few MB per minute at 1080p is plenty for a muted loop);
+- clips that are heavy for their length (our rule: a few MB per minute at 1080p is plenty for a muted loop);
 - players embedded above the fold with no preview image.
 
 ### 9.9 Sharing images work
@@ -135,12 +135,12 @@ Embeds from video platforms load lazily, or through a click-to-play preview. Rep
 `og:image` has these properties:
 
 - it is an absolute URL that answers `200`;
-- it is about 1200 × 630 pixels;
+- it is about 1200 × 630 pixels (our rule, the common size for link previews);
 - it is specific to the page where the page has its own image.
 
 The Twitter or X card tags agree with it. Report missing, broken or undersized sharing images.
 
-Google also looks at `og:image`, and at the schema.org `primaryImageOfPage`, when it picks a thumbnail for Search and Discover. It advises against logos and images full of text there.
+**Google update, 2 March 2026:** Google looks at `og:image`, and at the schema.org `primaryImageOfPage`, when it picks a thumbnail for Search and Discover, and advises against logos and images full of text there ([Image SEO best practices](https://developers.google.com/search/docs/appearance/google-images)).
 
 ### 9.10 Source files stay out of the deploy
 
@@ -150,7 +150,7 @@ Report large originals (PSD, full-size PNG or JPEG masters, raw video) inside th
 
 ## Fixes
 
-- **Encode once, at twice the display size.** Use WebP (around quality 80 for photos) or AVIF, with the size in the markup. Add a smaller version through `srcset` when phones show the image much smaller.
+- **Encode once, at twice the display size** (our rule). Use WebP (around quality 80 for photos, our rule) or AVIF, with the size in the markup. Add a smaller version through `srcset` when phones show the image much smaller.
 - **Name files by role and version**, for example `hero-pricing-v2.webp`. Change the name to change the file, and cache everything under the assets path for a year.
 - **Keep growing media in a public bucket or on a CDN** (blog covers, customer photos, video), referenced by permanent URLs.
 - **Use the framework's image component where the host optimizes images**, or plain `<img>` with pre-encoded files where it does not. Pick one, and do not mix them.

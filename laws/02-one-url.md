@@ -11,10 +11,10 @@ Every other variant redirects permanently to that address in a single hop. The p
 
 ## Why it matters
 
-- When the same content answers at several URLs, search engines pick a canonical for you. Your links and signals are split across the duplicates until they do.
-- Permanent redirects and the canonical tag are the signals Google names for choosing the URL you want. A 308 counts as a permanent redirect, like a 301.
-- URLs are case-sensitive. `/Pricing`, `/pricing` and `/pricing/` are three different URLs to a crawler.
-- An indexable staging site is a full copy of your content, competing with production.
+- **Duplicates split your signals.** When the same content answers at several URLs, search engines pick a canonical for you. Until they do, your links and signals are split across the duplicates.
+- **Google says** permanent redirects are "a strong signal that the target of the redirect should become canonical", next to the canonical tag. A 308 is equivalent to a 301 ([How to specify a canonical URL](https://developers.google.com/search/docs/crawling-indexing/consolidate-duplicate-urls), [HTTP status codes](https://developers.google.com/crawling/docs/troubleshooting/http-status-codes)).
+- **Google says** URLs are case-sensitive, so `/Pricing` and `/pricing` are different URLs ([URL structure best practices](https://developers.google.com/search/docs/crawling-indexing/url-structure)). With and without a trailing slash, they are different URLs too, except for the root ([To slash or not to slash](https://developers.google.com/search/blog/2010/04/to-slash-or-not-to-slash), 2010).
+- **An indexable staging site is a full copy of your content**, competing with production.
 
 ## Checks
 
@@ -32,7 +32,7 @@ for u in http://example.com/pricing https://example.com/pricing \
 done
 ```
 
-Each variant should answer `301` or `308`, pointing straight at the canonical URL. Report:
+Each variant should answer `301` or `308`, pointing straight at the canonical URL. Google's site-move guide also asks to avoid chains of redirects. Report:
 
 - **Duplicates:** variants that answer `200` without a canonical to the real URL.
 - **Chains:** variants that need two or more hops to reach it.
@@ -68,9 +68,13 @@ Report references to redirected variants, to other hosts, or to preview domains.
 
 **Where:** live URL · **Default severity:** blocker
 
-Staging and preview hosts answer with `X-Robots-Tag: noindex` or a `noindex` robots meta tag, and ideally sit behind a password. `robots.txt` alone does not keep a URL out of the index: a blocked page can still be listed from links.
+Staging and preview hosts answer with `X-Robots-Tag: noindex` or a `noindex` robots meta tag, and ideally sit behind a password.
 
-Production, on the other hand, carries no `noindex` on pages meant for search. Check both sides. The most common migration accident is a production site that went live with the staging setting.
+**Google says** "block indexing with noindex or password-protect the page" to keep it out of Google. `robots.txt` alone does not do it: a blocked page can still be indexed from links ([Introduction to robots.txt](https://developers.google.com/search/docs/crawling-indexing/robots/intro)).
+
+Production, on the other hand, carries no `noindex` on pages meant for search.
+
+**Our rule:** check both sides at every launch. A production site that goes live with the staging setting is the classic migration accident.
 
 ```bash
 curl -sI https://staging.example.com/ | grep -i x-robots-tag
@@ -83,7 +87,7 @@ curl -s https://www.example.com/ | grep -io '<meta[^>]*robots[^>]*>'
 
 URLs with tracking parameters (`?utm_source=...`, `?ref=...`) either redirect to the clean URL or answer with a canonical pointing at it.
 
-Filtered, sorted and paginated lists are either self-canonical or kept out of the sitemap. They are never canonicalized to the first page of the list.
+Filtered, sorted and paginated lists are either self-canonical or kept out of the sitemap. **Google says:** "Don't use the first page of a paginated sequence as the canonical page. Instead, give each page its own canonical URL" ([Pagination and incremental page loading](https://developers.google.com/search/docs/specialty/ecommerce/pagination-and-incremental-page-loading)).
 
 ### 2.6 Languages, if there are several, point at each other
 
@@ -95,7 +99,7 @@ Each language version:
 - lists every version, itself included, with `hreflang`;
 - has an `x-default`.
 
-The annotations are reciprocal: each version lists all the others. A site in one language needs none of this and should not emit it.
+**Google says** the annotations must be reciprocal: each version lists itself and all the others ([Localized versions of your pages](https://developers.google.com/search/docs/specialty/international/localized-versions)). A site in one language needs none of this and should not emit it.
 
 ## Fixes
 
@@ -145,6 +149,10 @@ Checked on 30 September 2026.
 
 - Google Search Central: [How to specify a canonical URL](https://developers.google.com/search/docs/crawling-indexing/consolidate-duplicate-urls)
 - Google Search Central: [Redirects and Google Search](https://developers.google.com/search/docs/crawling-indexing/301-redirects)
+- Google crawling documentation: [HTTP status codes](https://developers.google.com/crawling/docs/troubleshooting/http-status-codes)
+- Google Search Central: [Site moves with URL changes](https://developers.google.com/search/docs/crawling-indexing/site-move-with-url-changes), on redirect chains
+- Google Search Central: [Pagination and incremental page loading](https://developers.google.com/search/docs/specialty/ecommerce/pagination-and-incremental-page-loading)
+- Google Search Central: [Introduction to robots.txt](https://developers.google.com/search/docs/crawling-indexing/robots/intro)
 - Google Search Central: [URL structure best practices](https://developers.google.com/search/docs/crawling-indexing/url-structure), on case sensitivity
 - Google Search Central blog: [To slash or not to slash](https://developers.google.com/search/blog/2010/04/to-slash-or-not-to-slash), April 2010
 - Google Search Central: [Block search indexing with noindex](https://developers.google.com/search/docs/crawling-indexing/block-indexing)

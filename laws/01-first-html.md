@@ -17,17 +17,17 @@ What is missing from the first response may be seen late, seen wrong, or not see
 
 ## Why it matters
 
-- **Google renders later, and reads some signals first.** Google queues pages for rendering, and the wait "can take longer" than a few seconds.
-  - A `noindex` in the original HTML may make Google skip rendering and JavaScript altogether.
-  - A canonical that JavaScript changes conflicts with the one in the HTML.
-- **Server-side rendering helps everyone.** Google calls server-side rendering or pre-rendering "a great idea". It makes pages faster for people and crawlers, and not every bot can run JavaScript.
-- **Google follows real links.** It follows links when they are `<a>` elements with an `href`.
+- **Google renders later, and reads some signals first.** Google says pages wait in a rendering queue, and the wait "can take longer" than a few seconds ([JavaScript SEO basics](https://developers.google.com/search/docs/crawling-indexing/javascript/javascript-seo-basics)):
+  - **Google update, 15 December 2025:** a `noindex` in the original HTML may make Google skip rendering and JavaScript altogether.
+  - **Google update, 17 December 2025:** JavaScript should not change the canonical to something other than the one in the original HTML.
+- **Server-side rendering helps everyone.** Google says server-side rendering or pre-rendering is "a great idea": it makes pages faster for people and crawlers, and not every bot can run JavaScript ([Dynamic rendering as a workaround](https://developers.google.com/search/docs/crawling-indexing/javascript/dynamic-rendering)).
+- **Google follows real links.** Google says it can generally crawl a link only when it is an `<a>` element with an `href` ([Make your links crawlable](https://developers.google.com/search/docs/crawling-indexing/links-crawlable)).
 - **Other readers need the HTML even more.**
-  - In a large study of crawler traffic, only Google's and Apple's crawlers executed JavaScript. The other AI crawlers it measured did not, although some downloaded the script files (details in [ai-crawlers.md](ai-crawlers.md)).
-  - Social networks and chat apps build link previews from the Open Graph tags they find in the HTML.
+  - **Study (Vercel and MERJ, December 2024):** only Google's and Apple's crawlers executed JavaScript. The other AI crawlers it measured did not, although some downloaded the script files (details in [ai-crawlers.md](ai-crawlers.md)).
+  - Social networks and chat apps build link previews from the [Open Graph](https://ogp.me/) tags they find in the HTML.
 - **People benefit too.** Text in the HTML can paint before any script has downloaded.
 
-Google says that loading content with JavaScript does not, by itself, make a page harder for Google Search. This law is about the signals Google reads before rendering, the readers that never render, and speed.
+**Google update, 4 March 2026:** Google says loading content with JavaScript does not, by itself, make a page harder for Google Search. This law is about three other things: the signals Google reads before rendering, the readers that never render, and speed.
 
 ## Checks
 
@@ -118,7 +118,7 @@ Blocking a crawler is a valid choice. Blocking one by accident is the finding.
 
 **Where:** live URL · **Default severity:** polish
 
-`robots.txt` states your intent for AI crawlers. There are two decisions to make:
+**Our rule:** `robots.txt` states your intent for AI crawlers, as two separate decisions.
 
 - **Assistants that fetch a page to answer a question and cite it** (search and user-triggered agents): allow them if you want to appear in AI answers.
 - **Crawlers that collect training data**: decide about them separately.
@@ -126,8 +126,8 @@ Blocking a crawler is a valid choice. Blocking one by accident is the finding.
 The `User-agent: *` rule already covers crawlers you do not name. Naming them turns the decision into a record, so nobody reverses it by accident.
 
 `robots.txt` is not the only control, and not always the strongest:
-- agents that fetch a page because a user asked may ignore it;
-- Google offers a separate setting in Search Console to leave AI Overviews and AI Mode.
+- the vendors say that agents fetching a page because a user asked may ignore it;
+- **Google update, 31 August 2026:** a separate setting in Search Console now lets any site leave AI Overviews and AI Mode.
 
 The crawlers, what each one does and the other controls are in [ai-crawlers.md](ai-crawlers.md).
 
@@ -137,9 +137,11 @@ The crawlers, what each one does and the other controls are in [ai-crawlers.md](
 
 `/llms.txt` is a proposed format: a Markdown index of the pages that matter.
 
-Google says Search ignores it: publishing one "will neither harm nor help" a site in Google Search. Google also says its AI features need no special files or markup. No AI company says that its crawlers or answers read the file.
+- **Google update, 15 June 2026:** Google says Search ignores the file. Publishing one "will neither harm nor help" a site in Google Search ([Optimizing your website for generative AI features](https://developers.google.com/search/docs/fundamentals/ai-optimization-guide)).
+- **Google says** its AI features need no special files or markup ([AI features and your website](https://developers.google.com/search/docs/appearance/ai-features)).
+- **No AI company says** that its crawlers or answers read the file, as of 30 September 2026.
 
-If you publish one anyway, generate it from the same list that builds your sitemap, so the two cannot drift. Do not maintain it by hand. Not having one is not a finding.
+**Our rule:** if you publish one anyway, generate it from the same list that builds your sitemap, so the two cannot drift. Do not maintain it by hand. Not having one is not a finding.
 
 ## Fixes
 

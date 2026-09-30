@@ -58,7 +58,7 @@ Crawlers that do not run JavaScript see only the first HTML response ([law 1](01
 
 ## A starting point for robots.txt
 
-Search engines and AI search crawlers are allowed by the `*` group. The training crawlers are named in their own group, so the decision about them is visible and easy to reverse.
+**Our rule**, not a vendor's. Search engines and AI search crawlers are allowed by the `*` group. The training crawlers are named in their own group, so the decision about them is visible and easy to reverse.
 
 ```txt
 User-agent: *

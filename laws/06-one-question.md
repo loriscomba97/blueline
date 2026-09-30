@@ -11,12 +11,15 @@ No other page on the same site competes for the same query.
 
 ## Why it matters
 
-- **A page that serves three intents ranks for none.** Two pages for the same query compete with each other, and neither gets the full weight of your links.
+- **A page that serves three intents ranks for none** (our rule, from experience). Two pages for the same query compete with each other, and neither gets the full weight of your links.
 - **Search engines build the result from your page.**
-  - Google asks for "descriptive and concise" titles, and warns against boilerplate and keyword stuffing.
-  - It builds snippets mainly from the content of the page, so the first lines matter as much as the description.
-- **Google's questions for content quality** include whether the page provides original information, and "insightful analysis or interesting information that is beyond the obvious".
-- **AI answers draw on the same pages.** Google says its AI features have "no additional requirements" and need no special optimization, files or markup. There is no need to split content into chunks or rewrite it for AI. The fundamentals are the optimization. Writing that puts the answer first serves readers, and those passages are also the easiest to quote correctly.
+  - **Google says** to write "descriptive and concise" titles, and warns against boilerplate and keyword stuffing ([Influencing your title links](https://developers.google.com/search/docs/appearance/title-link)).
+  - **Google says** it builds snippets mainly from the content of the page ([Control your snippets](https://developers.google.com/search/docs/appearance/snippet)). The first lines matter as much as the description.
+- **Google's questions for content quality** include whether the page provides original information, and "insightful analysis or interesting information that is beyond the obvious" ([Creating helpful content](https://developers.google.com/search/docs/fundamentals/creating-helpful-content)).
+- **AI answers draw on the same pages.**
+  - **Google says** its AI features have "no additional requirements" and need no special optimization ([AI features and your website](https://developers.google.com/search/docs/appearance/ai-features)).
+  - **Google update, 15 May 2026:** Google's guide to generative AI search adds that there is no need to split content into small pieces or to write in a special way for AI ([Optimizing your website for generative AI features](https://developers.google.com/search/docs/fundamentals/ai-optimization-guide)).
+  - The fundamentals are the optimization. Writing that puts the answer first serves readers, and those passages are also the easiest to quote correctly.
 
 ## Checks
 
@@ -36,7 +39,7 @@ The `<title>` has these properties:
 
 - it is unique across the site;
 - it starts with the words of the primary query, not with the brand slogan;
-- it is short enough to show in full on a results page (about 60 characters);
+- it is short enough to show in full on a results page (about 60 characters, our rule);
 - it ends with the brand when the brand helps.
 
 Report duplicates, slogans in the lead position, keyword lists and generic titles such as "Home" or "Features". Suggest a replacement for each one.
@@ -60,7 +63,7 @@ Report:
 
 - it is unique to the page;
 - it is written by a person;
-- it summarizes what the page gives the reader in a sentence or two (about 150 characters).
+- it summarizes what the page gives the reader in a sentence or two (about 150 characters, our rule).
 
 Report descriptions that are missing, duplicated across pages, or copied from the first paragraph by default.
 
@@ -84,7 +87,7 @@ Report pages whose visible section titles are not headings at all (styled `<div>
 
 - **The first paragraph** after the H1 answers the query directly. The context and the qualifiers come after it.
 - **"What is X" pages** open with a definition.
-- **FAQ answers** open with the answer in their first sentence, and stay short (40 to 70 words is a good target).
+- **FAQ answers** open with the answer in their first sentence, and stay short (40 to 70 words, our rule).
 
 Report pages that make the reader scroll past an introduction to find the answer.
 
@@ -92,7 +95,7 @@ Report pages that make the reader scroll past an introduction to find the answer
 
 **Where:** live URL, content · **Default severity:** polish
 
-Good copy names the input, the action and the result: "Resize 500 product photos for your store in one pass" instead of "streamline your workflow". Report:
+**Our rule:** good copy names the input, the action and the result: "Resize 500 product photos for your store in one pass" instead of "streamline your workflow". Report:
 
 - generic adjectives (powerful, seamless, revolutionary, cutting-edge, game-changing);
 - vague promises ("unlock your potential", "take it to the next level");
@@ -112,13 +115,13 @@ Good copy names the input, the action and the result: "Resize 500 product photos
 
 **Without data**, compare the titles and H1s across the sitemap, and report pairs that target the same query.
 
-Never answer cannibalization with a third page.
+**Our rule:** never answer cannibalization with a third page.
 
 ### 6.9 The page covers what ranks, and adds something
 
 **Where:** content, with the top results for the query · **Default severity:** fix soon
 
-Read the pages that rank in the top three for the primary query: their headings, depth, format and sources. Then check the page under review on three points:
+**Our rule:** read the pages that rank in the top three for the primary query: their headings, depth, format and sources. Then check the page under review on three points:
 
 - **Coverage.** It covers every subtopic that two or more of them cover. Leaving out the consensus costs rankings, however good the rest is.
 - **Format.** It matches the format the results reward: a step-by-step guide, a comparison, a definition.
@@ -136,7 +139,7 @@ The page rests on something only this site can say:
 - data it has collected;
 - first-hand experience.
 
-Write the angle in one sentence. When a topic offers no such angle, the page is a generic article on a good keyword, and those lose to established pages. Report it, and say so plainly.
+**Our rule:** write the angle in one sentence. When a topic offers no such angle, the page is a generic article on a good keyword, and those lose to established pages. Report it, and say so plainly.
 
 ### 6.11 Improve the page that already ranks before writing a new one
 
@@ -148,7 +151,7 @@ Before a new page is written for a query, check whether an existing page already
   - a title that matches the query;
   - a section named with the exact words people search, such as the exact text of an error message;
   - an FAQ entry.
-- **If a page was published or rewritten in the last two or three months and is still climbing**, support it with links and a better title before rewriting it.
+- **If a page was published or rewritten in the last two or three months and is still climbing** (our rule), support it with links and a better title before rewriting it.
 
 Report plans for new pages that duplicate an existing ranking page.
 
@@ -156,7 +159,7 @@ Report plans for new pages that duplicate an existing ranking page.
 
 **Where:** content · **Default severity:** polish
 
-A keyword with high volume and the wrong audience is a trap: it brings visitors who will never buy, and it dilutes what the site is known for. A small, specific query from the right buyer is usually worth more.
+**Our rule:** a keyword with high volume and the wrong audience is a trap. It brings visitors who will never buy, and it dilutes what the site is known for. A small, specific query from the right buyer is usually worth more.
 
 Report pages whose target query does not match the people the product serves.
 
@@ -166,7 +169,7 @@ Report pages whose target query does not match the people the product serves.
 
 Each visual element shows something a paragraph cannot: a before and after, a workflow, a comparison, the product doing the thing the section describes.
 
-A product video belongs where it illustrates the topic. Keep it off comparison pages, where it undermines the page's claim to be fair, and off pages it does not match.
+**Our rule:** a product video belongs where it illustrates the topic. Keep it off comparison pages, where it undermines the page's claim to be fair, and off pages it does not match.
 
 Report decorative stock images and videos that do not match the section they sit in.
 

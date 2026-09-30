@@ -8,13 +8,13 @@
 
 ## Why it matters
 
-- **Core Web Vitals measure exactly this.** Google treats a page as good when, at the 75th percentile of real visits, measured separately on mobile and desktop, all three hold:
+- **Core Web Vitals measure exactly this.** **web.dev says** a page is good when, at the 75th percentile of real visits, measured separately on mobile and desktop, all three hold ([Web Vitals](https://web.dev/articles/vitals)):
   - Largest Contentful Paint is 2.5 seconds or less;
   - Interaction to Next Paint is 200 milliseconds or less;
   - Cumulative Layout Shift is 0.1 or less.
-- **Speed counts, but does not win on its own.** Google says Core Web Vitals are used by its ranking systems, and also that a good page experience alone does not guarantee a top ranking. Speed is the floor, not the ceiling.
-- **Third-party scripts are the most common cause of slow marketing pages.** Each one brings its own downloads, its own main-thread work and often its own layout shifts, on code you do not control.
-- **Each dependency is paid by every visitor**, on every page. A library that saves the developer an afternoon costs visitors kilobytes forever.
+- **Speed counts, but does not win on its own.** **Google says** "Core Web Vitals are used by our ranking systems", and that a good page experience alone "doesn't guarantee that your pages will rank at the top" ([Understanding page experience](https://developers.google.com/search/docs/appearance/page-experience)). Speed is the floor, not the ceiling.
+- **Third-party scripts are the usual suspects.** **web.dev says** third-party JavaScript can badly hurt performance, and tag managers can hurt Core Web Vitals indirectly ([Efficiently load third-party JavaScript](https://web.dev/articles/efficiently-load-third-party-javascript), [Best practices for tags and tag managers](https://web.dev/articles/tag-best-practices)). In our experience, they are the most common cause of slow marketing pages: each one brings its own downloads, main-thread work and layout shifts, on code you do not control.
+- **Each dependency is paid by every visitor**, on every page (our rule). A library that saves the developer an afternoon costs visitors kilobytes forever.
 
 ## Checks
 
@@ -71,7 +71,7 @@ List the production dependencies. For each large one, say what it does and wheth
 - date and state libraries;
 - analytics and CMS SDKs.
 
-A marketing site rarely needs more than its framework and a handful of packages. Report libraries imported for one small feature, and packages that are installed but unused.
+**Our rule:** a marketing site rarely needs more than its framework and a handful of packages. Report libraries imported for one small feature, and packages that are installed but unused.
 
 ### 8.5 Fonts are few and never hide the text
 
@@ -80,14 +80,14 @@ A marketing site rarely needs more than its framework and a handful of packages.
 Fonts should be:
 
 - few files, in `woff2` (a variable font covers all weights);
-- set to `font-display: swap`, or `optional` when speed comes first, so text shows before the font arrives;
+- set to `font-display: swap`, or `optional` when speed comes first, so text shows before the font arrives. **web.dev says** `optional` is the choice when performance comes first ([Best practices for fonts](https://web.dev/articles/font-best-practices));
 - preloaded only for the font used above the fold.
 
-Report text that stays invisible while fonts load, and more than three font files on first load.
+Report text that stays invisible while fonts load, and more than three font files on first load (our rule).
 
-Serving fonts from your own domain saves a connection to another origin, and it keeps visitors' IP addresses away from a third party. The speed gain is small in practice, so measure it before claiming one.
+Serving fonts from your own domain saves a connection to another origin, and it keeps visitors' IP addresses away from a third party. **web.dev says** the speed difference is unclear in practice and worth measuring (same page).
 
-Report fonts loaded from another origin as polish, for the privacy reason more than for speed.
+**Our rule:** report fonts loaded from another origin as polish, for the privacy reason more than for speed.
 
 ### 8.6 The main image arrives first
 
@@ -96,7 +96,7 @@ Report fonts loaded from another origin as polish, for the privacy reason more t
 The largest element above the fold, usually a hero image, meets three conditions:
 
 - it is not lazy-loaded;
-- it carries `fetchpriority="high"`, a hint worth giving to one or two images at most;
+- it carries `fetchpriority="high"`. **web.dev says** the hint stops helping when more than one or two images get it ([Optimize resource loading with the Fetch Priority API](https://web.dev/articles/fetch-priority));
 - it is discoverable in the HTML, or preloaded when it is set from CSS.
 
 Report a lazy-loaded hero, and a hero that depends on JavaScript to appear.
@@ -135,13 +135,13 @@ Report a slow first byte on pages that are the same for every visitor. They shou
 ## Fixes
 
 - **Load the tag manager on the first interaction**, with an idle fallback, instead of in the `<head>`. Put analytics, ads and pixels inside it, so the site never hardcodes a vendor tag. Consent is then applied when tags fire, not by delaying the page.
-- **Replace heavy embeds with facades:** a static preview that loads the real player on click. Load chat widgets on demand, or when the browser is idle.
-- **Preconnect only to origins the page uses within the first seconds.** Browsers close a connection that stays unused for about ten seconds.
+- **Replace heavy embeds with facades:** a static preview that loads the real player on click. Load chat widgets on demand, or when the browser is idle. **web.dev says** the same for non-critical embeds ([Best practices for using third-party embeds](https://web.dev/articles/embed-best-practices)).
+- **Preconnect only to origins the page uses within the first seconds.** **web.dev says** browsers close a connection that stays unused for about ten seconds ([Establish network connections early](https://web.dev/articles/preconnect-and-dns-prefetch)).
 - **Self-host fonts** through the framework's font loader, or with `@font-face` and `woff2` files.
 - **Keep the dependency list short enough to read on one screen**, and review every addition.
 
 ```ts
-// lib/tag-manager.ts: load the tag manager after the first interaction, or after 10 s idle
+// lib/tag-manager.ts: load the tag manager after the first interaction, or after 10 s (our rule)
 export function loadTagManagerOnInteraction(src: string) {
   const events = ['pointerdown', 'keydown', 'scroll', 'touchstart'];
   let done = false;

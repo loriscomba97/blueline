@@ -7,9 +7,9 @@
 
 ## Why it matters
 
-- **Crawlers find pages by following links.** Google asks that every page you care about has a link from at least one other page on your site. A sitemap helps discovery, but it does not replace links.
-- **The anchor text tells readers and search engines what the target is about.** Google asks for descriptive, reasonably concise anchors that are relevant to both pages, and advises against links chained next to each other.
-- **Links spread attention.** Links concentrated on two or three pages leave the rest of the library with nothing, however good those pages are.
+- **Crawlers find pages by following links.** **Google says:** "Every page you care about should have a link from at least one other page on your site" ([Make your links crawlable](https://developers.google.com/search/docs/crawling-indexing/links-crawlable)). A sitemap helps discovery, but it does not replace links.
+- **The anchor text tells readers and search engines what the target is about.** **Google says** good anchor text is "descriptive, reasonably concise, and relevant", and advises: "Don't chain up links next to each other" (same page).
+- **Links spread attention** (our rule, from experience). Links concentrated on two or three pages leave the rest of the library with nothing, however good those pages are.
 
 ## Checks
 
@@ -26,7 +26,7 @@ Report sitemap URLs with zero inbound links (orphans), and the pages that sell (
 
 **Where:** live URL, content · **Default severity:** polish
 
-Good anchors are two to eight words that describe the target, placed inside a real sentence. Report:
+Good anchors are two to eight words (our rule) that describe the target, placed inside a real sentence. Report:
 
 - generic anchors: "click here", "read more", "this", "here";
 - bare URLs used as anchors in body copy;
@@ -66,7 +66,7 @@ Compare inbound link counts across the library. Report:
 
 **Where:** content · **Default severity:** fix soon
 
-A new article links to three to five related pages. Check every target against the live sitemap before publishing, so no link points at an unpublished page.
+A new article links to three to five related pages (our rule). Check every target against the live sitemap before publishing, so no link points at an unpublished page.
 
 At least one existing page links to it on the day it goes live. Report drafts with no internal links, links to URLs that are not live, and new pages with no inbound link.
 
@@ -74,7 +74,7 @@ At least one existing page links to it on the day it goes live. Report drafts wi
 
 **Where:** code · **Default severity:** polish
 
-A related-posts module that picks "same category, most recent" links to the newest posts over and over, and leaves older ones with nothing. Make one slot orphan-proof by construction:
+A related-posts module that picks "same category, most recent" links to the newest posts over and over, and leaves older ones with nothing. **Our rule:** make one slot orphan-proof by construction.
 
 - sort the posts by date;
 - let post *n* link to post *n + 1*, wrapping around at the end.
@@ -99,7 +99,7 @@ Report modules that can leave a page with no inbound link.
   3. Apply only the approved rows.
 
   Keep a backup of every edited paragraph so the pass can be undone.
-- **Set limits** so no page is stuffed and no target is over-linked: four new links per page and eight new inbound links per target are sensible ceilings for one pass.
+- **Set limits** so no page is stuffed and no target is over-linked. Our rule for one pass: at most four new links per page, and eight new inbound links per target.
 
 Next.js example of an orphan-proof related slot:
 

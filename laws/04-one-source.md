@@ -12,7 +12,7 @@ The store is a constant in the code or a field in the CMS. The page, the metadat
 ## Why it matters
 
 - **Copies drift.** Somebody updates the price on the pricing page and forgets the FAQ, the product page and the structured data. The site now says two things, and AI answers may quote either one.
-- **Structured data must describe what is visible on the page.** Google's guidelines say it plainly: "Don't mark up content that is not visible to readers of the page."
+- **Structured data must describe what is visible on the page.** **Google says** it plainly: "Don't mark up content that is not visible to readers of the page" ([General structured data guidelines](https://developers.google.com/search/docs/appearance/structured-data/sd-policies)).
 - **"Harmonizing" breaks facts.** When one fact is typed into many places, the tempting fix is to make them all match. If products really differ (requirements, prices, billing), matching them publishes something false.
 
 ## Checks
@@ -44,9 +44,12 @@ Report:
 - reviews or ratings with no visible review;
 - products or offers the page does not show.
 
-Markup for content the reader cannot see is exactly what the guidelines forbid. There is no longer a reward to chase either: Google retired FAQ rich results in May 2026, after limiting them to government and health sites in 2023.
+Markup for content the reader cannot see is exactly what the guidelines forbid. There is no longer a reward to chase either:
 
-Use `FAQPage` only to describe a FAQ that is really on the page.
+- **Google update, 8 August 2023:** FAQ rich results were limited to "well-known, authoritative government and health websites" ([Changes to HowTo and FAQ rich results](https://developers.google.com/search/blog/2023/08/howto-faq-changes)).
+- **Google update, 8 May 2026:** Google deprecated the FAQ rich result. It "will no longer appear in Google Search starting May 7, 2026" ([Latest documentation updates](https://developers.google.com/search/updates)).
+
+**Our rule:** use `FAQPage` only to describe a FAQ that is really on the page.
 
 ### 4.3 The same fact is not typed twice in the code
 
@@ -55,7 +58,7 @@ Use `FAQPage` only to describe a FAQ that is really on the page.
 Search the repository for literal values that should come from one place. Report each value that appears as a literal in more than one file, with the file and line of each copy:
 
 - prices and currencies (`€29`, `$19/month`);
-- version and system requirements (`macOS 13`, `Windows 11`);
+- version and system requirements (`Windows 11`, `Android 14`);
 - plan names, trial lengths, discount percentages;
 - support emails and phone numbers.
 
@@ -65,7 +68,7 @@ Search the repository for literal values that should come from one place. Report
 
 Requirements, prices, billing periods and feature lists often differ between products or plans. Check that each product reads its own values. Report a shared constant or a copied block that makes two products claim the same thing when their documentation says otherwise.
 
-Never fix a mismatch by making every product match. Confirm the right value for each product with its owner.
+**Our rule:** never fix a mismatch by making every product match. Confirm the right value for each product with its owner.
 
 ### 4.5 Bylines, author pages and schema read one record
 

@@ -10,9 +10,9 @@
 ## Why it matters
 
 - **Links and rankings.** Every URL with links or rankings carries value. A redirect to its replacement passes it on; an accidental `404` throws it away.
-- **Soft 404s.** A "not found" page that answers `200` is a soft 404. Search engines have to guess that the page is empty, and meanwhile they spend crawl time on it.
-- **Mass redirects to the home page.** Sending many removed URLs to the home page can be treated as soft 404s as well: the home page does not replace them.
-- **Sitemap errors.** A sitemap full of redirects, errors and `noindex` pages tells crawlers that the file is not worth trusting.
+- **Soft 404s.** **Google says** a soft 404 is "a page telling the user that the page does not exist and also a 200 (success) status code", and that missing pages should return `404` or `410` ([Troubleshoot crawling errors](https://developers.google.com/search/docs/crawling-indexing/troubleshoot-crawling-errors)).
+- **Mass redirects to the home page.** **Google says** redirecting old URLs to an irrelevant page, "such as the home page of the new site", can confuse users and "might be treated as a soft 404 error" ([Site moves with URL changes](https://developers.google.com/search/docs/crawling-indexing/site-move-with-url-changes)).
+- **The sitemap is the list of pages you want in search.** **Google says** it should list canonical URLs ([Build and submit a sitemap](https://developers.google.com/search/docs/crawling-indexing/sitemaps/build-sitemap)). Redirects, errors and `noindex` pages in it contradict the list.
 
 ## Checks
 
@@ -34,7 +34,7 @@ The not-found page:
 
 - renders inside the normal header and footer;
 - says plainly that the page does not exist;
-- offers five or six links to the main sections.
+- offers five or six links to the main sections (our rule).
 
 It keeps the `404` status.
 
@@ -43,14 +43,16 @@ It keeps the `404` status.
 **Where:** live URL · **Default severity:** blocker when many entries fail, fix soon otherwise
 
 1. Find the sitemap: the `Sitemap:` line in `robots.txt`, or `/sitemap.xml`.
-2. Request every entry, or a sample of 100 on large sites.
+2. Request every entry, or a sample of 100 on large sites (our rule).
 3. Check each entry. Each one:
    - answers `200` without a redirect;
    - is canonical to itself;
    - carries no `noindex`.
 4. Report each failing entry with its status.
 
-Check `lastmod` too. Where present, it should change when the page changes. Report a sitemap where every entry carries the same timestamp (usually the build time). Google uses `lastmod` only when it is consistently and verifiably accurate.
+Check `lastmod` too. Where present, it should change when the page changes. Report a sitemap where every entry carries the same timestamp (usually the build time).
+
+**Google says** it uses `lastmod` only if it is "consistently and verifiably" accurate ([Build and submit a sitemap](https://developers.google.com/search/docs/crawling-indexing/sitemaps/build-sitemap)).
 
 ### 3.4 Redirects are single hops to relevant pages
 
@@ -79,7 +81,7 @@ Collect the internal links on the pages you review. Report:
 The list of URLs that mattered in the past comes from:
 
 - the old sitemap;
-- a Search Console export of pages with impressions in the last 16 months;
+- a Search Console export of pages with impressions in the last 16 months, the longest period Search Console keeps;
 - analytics landing pages;
 - a crawl.
 

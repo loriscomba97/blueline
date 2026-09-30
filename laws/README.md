@@ -27,6 +27,18 @@ Every law has the same parts:
 - **Fixes**, with short examples in plain HTML and Next.js.
 - **Exceptions**: when breaking the law is the right call.
 
+## Who says so
+
+Every statement in these pages is one of three kinds, and the text says which.
+
+| Label | What it means |
+|---|---|
+| **Google says**, **web.dev says**, or a vendor's name | Official guidance, linked to the page it comes from. When the guidance changed recently, the date of the update is given, for example *Google update, 8 May 2026*. |
+| **Study** | Third-party research, named and dated. Useful evidence, not a rule. |
+| **Our rule** | A threshold or a practice we recommend from running marketing sites. No search engine requires it. Adjust it when you have a reason, and write the reason down. |
+
+Every number in a check (a size, a count, a length, a number of days) is our rule unless the text attributes it to someone else. So is every default severity, and every fix.
+
 ## Severity
 
 | Severity | Meaning |

@@ -9,15 +9,15 @@
 
 ## Why it matters
 
-- **The most expensive mistakes take one line and are silent.** A `noindex` left over from staging, a `Disallow: /` in `robots.txt`, an expired CMS token that ships an empty blog. None of them breaks the build unless you make it.
-- **`robots.txt` does not remove pages from search.** A `noindex` on a page that crawlers are blocked from fetching is never seen. Getting indexing right takes an explicit, tested setting.
-- **Migrations fail on parity.** Google's guidance for site moves comes down to preparation and verification:
+- **The most expensive mistakes take one line and are silent** (our experience). A `noindex` left over from staging, a `Disallow: /` in `robots.txt`, an expired CMS token that ships an empty blog. None of them breaks the build unless you make it.
+- **`robots.txt` does not remove pages from search.** **Google says** a page blocked by `robots.txt` can still be indexed from links, and that `noindex` works only when crawlers are allowed to fetch the page ([Block search indexing with noindex](https://developers.google.com/search/docs/crawling-indexing/block-indexing)). Getting indexing right takes an explicit, tested setting.
+- **Migrations fail on parity.** **Google says**, in its guide to site moves ([Site moves with URL changes](https://developers.google.com/search/docs/crawling-indexing/site-move-with-url-changes)):
   - map every old URL;
   - redirect permanently, without chains;
   - update internal links and sitemaps;
   - keep the redirects "generally at least 1 year";
   - watch Search Console closely after the move.
-- **People forget; checks do not.** A checklist that runs in the build is applied every time, by everyone.
+- **People forget; checks do not** (our rule). A checklist that runs in the build is applied every time, by everyone.
 
 ## Checks
 
@@ -28,7 +28,7 @@
 - **On production:** no `noindex` in the robots meta tag or the `X-Robots-Tag` header of pages meant for search, and no `Disallow: /` in `robots.txt`.
 - **On staging and preview hosts:** the opposite, `noindex` on everything, plus a password where possible.
 
-In the code, indexing is an explicit setting that defaults to off. Only the production build turns it on, so a missing variable fails safe. Keep analytics behind a separate setting: indexing and tracking are different decisions.
+**Our rule:** in the code, indexing is an explicit setting that defaults to off. Only the production build turns it on, so a missing variable fails safe. Keep analytics behind a separate setting: indexing and tracking are different decisions.
 
 ```ts
 // lib/site.ts: not indexable unless the production build says so
@@ -46,13 +46,15 @@ export const IS_INDEXABLE = process.env.SITE_INDEXABLE === 'true';
 - does not block CSS or JavaScript;
 - ends with the `Sitemap:` line pointing at the absolute sitemap URL.
 
-When migrating, it reproduces the old file's intentional rules exactly and adds no new blocks. The policy for AI crawlers is written down ([law 1](01-first-html.md), check 1.7).
+**Google says** not to block the resources Google needs to render the page, such as CSS and JavaScript ([Understand JavaScript SEO basics](https://developers.google.com/search/docs/crawling-indexing/javascript/javascript-seo-basics)).
+
+**Our rule:** when migrating, the file reproduces the old file's intentional rules exactly and adds no new blocks. The policy for AI crawlers is written down ([law 1](01-first-html.md), check 1.7).
 
 ### 10.3 The build refuses broken content
 
 **Where:** code · **Default severity:** fix soon (list the missing guards)
 
-A pre-build script fails the production build when any of these happens:
+**Our rule:** a pre-build script fails the production build when any of these happens:
 
 - the CMS token is set but zero published items come back (usually an expired or rotated token);
 - a slug is malformed or duplicated;
@@ -62,7 +64,7 @@ A pre-build script fails the production build when any of these happens:
 - published content contains a placeholder (`[TODO`, `[TK]`, `[FACT-CHECK`);
 - an internal link points at a route that does not exist.
 
-Report which of these guards exist and which are missing. Each is 10 to 20 lines of code.
+Report which of these guards exist and which are missing. In our experience, each takes 10 to 20 lines of code.
 
 ### 10.4 Outages fail soft; empty builds fail loud
 
@@ -111,7 +113,7 @@ After every change to tracking, check conversions in the vendor's debug view.
 
 **Where:** live URL · **Default severity:** blocker
 
-At every launch, and after every migration cutover, two people check together:
+**Our rule:** at every launch, and after every migration cutover, two people check together:
 
 1. Production is indexable (10.1).
 2. `robots.txt` is open and lists the sitemap (10.2).
@@ -128,7 +130,7 @@ Record who checked, and when.
 
 **Where:** live URL, with the old site and its data · **Default severity:** blocker
 
-**Before the cutover:**
+**Before the cutover** (our rules, built on Google's site-move guide):
 
 1. Build the full URL inventory from three sources: the old sitemap, a Search Console export of the last 16 months, and a crawl. Every URL returns `200` at the same path or has a documented permanent redirect ([law 3](03-no-dead-urls.md), check 3.6).
 2. Reproduce first, improve later. Reproduce these per URL:
@@ -140,13 +142,13 @@ Record who checked, and when.
 **After the cutover:**
 
 1. Run the launch gate (10.8).
-2. Resubmit the sitemap. When the domain changed, also use Search Console's Change of Address tool.
-3. Keep the old site recoverable for 30 days, and the redirects for at least a year.
-4. For 14 days, watch Search Console daily: coverage, crawl errors, spikes in 404s, impressions.
+2. Resubmit the sitemap. **Google says** to use Search Console's Change of Address tool when the domain changed.
+3. Keep the old site recoverable for 30 days (our rule). **Google says** to keep the redirects "generally at least 1 year".
+4. For 14 days, watch Search Console daily: coverage, crawl errors, spikes in 404s, impressions (our rule).
 
 A prolonged drop means a parity item was missed. Recheck URLs, canonicals and robots before anything else.
 
-**When only the hosting changes** and every URL stays the same:
+**When only the hosting changes** and every URL stays the same, **Google says** ([Changing your web hosting](https://developers.google.com/search/docs/crawling-indexing/site-move-no-url-changes)):
 
 - lower the DNS time-to-live about a week before the switch;
 - make sure the new host's firewall or bot protection does not block search engine crawlers;

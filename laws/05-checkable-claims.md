@@ -11,16 +11,16 @@
 
 ## Why it matters
 
-- **Search engines ask who made the content.** Google's own questions for judging content include:
+- **Search engines ask who made the content.** **Google says** its questions for judging content include ([Creating helpful, reliable, people-first content](https://developers.google.com/search/docs/fundamentals/creating-helpful-content)):
   - whether it is self-evident who authored it;
   - whether pages carry a byline;
   - whether bylines "lead to further information about the author".
 - **Wrong claims get repeated.** A number without a date goes stale silently, and AI answers keep repeating it. A rounded-up number overstates the truth the day it ships.
 - **Using AI is allowed; hiding it is not.**
-  - "Appropriate use of AI or automation is not against our guidelines," says Google: it judges quality, not how content is produced.
-  - It suggests disclosing AI or automation "when it would be reasonably expected".
-  - It warns that mass-producing pages without added value breaks its spam policies.
-  - For images, the IPTC digital source type records that a file came from a generative model, and Google documents it in its image metadata guide.
+  - **Google says** "Appropriate use of AI or automation is not against our guidelines": it judges quality, not how content is produced ([Google Search's guidance about AI-generated content](https://developers.google.com/search/blog/2023/02/google-search-and-ai-content), February 2023).
+  - **Google says** to disclose AI or automation "when it would be reasonably expected" ([Creating helpful content](https://developers.google.com/search/docs/fundamentals/creating-helpful-content)).
+  - **Google says** mass-producing pages without added value can break its spam policy on scaled content ([Using generative AI content](https://developers.google.com/search/docs/fundamentals/using-gen-ai-content)).
+  - For images, the IPTC digital source type records that a file came from a generative model. **Google says** it extracts this field ([Image metadata](https://developers.google.com/search/docs/appearance/structured-data/image-license-metadata)). The AI labels in its image details come from C2PA and SynthID data instead ([About this image](https://support.google.com/websearch/answer/9789430)).
 - **One broken claim costs the rest.** A single invented quote or wrong comparison makes readers discount every other claim on the site.
 
 ## Checks
@@ -36,7 +36,7 @@ Find every metric in the copy, for example:
 - percentages;
 - "X times faster".
 
-Each one shows a date and a scope nearby, for example "Measured across 1,200 teams, as of July 2026". In the code, each one comes from a single place that records where the value came from.
+**Our rule:** each one shows a date and a scope nearby, for example "Measured across 1,200 teams, as of July 2026". In the code, each one comes from a single place that records where the value came from.
 
 Report:
 
@@ -47,6 +47,8 @@ Report:
 ### 5.2 Numbers round in the reader's favor
 
 **Where:** code, content · **Default severity:** fix soon
+
+**Our rule:**
 
 - Counts round down: 71,842 becomes "70,000+", never "75,000+".
 - A rate that looks better when smaller (error rate, setup time) rounds up.
@@ -80,7 +82,7 @@ Every article shows a byline that links to a page about that person. The page gi
 - the person's role and background;
 - links to their public profiles.
 
-The article's structured data names the same person, with `author.url` pointing at that page.
+The article's structured data names the same person, with `author.url` pointing at that page. **Google says** `author.url` should be "a link to a web page that uniquely identifies the author of the article" ([Article structured data](https://developers.google.com/search/docs/appearance/structured-data/article)).
 
 Report:
 
@@ -123,14 +125,14 @@ Descriptions of your own product match its documentation: what it detects, suppo
 
 An image made with a generative model says so twice:
 
-- **In its alt text.** Add a fixed suffix such as "AI-generated illustration.", appended by the code so the wording lives in one place.
-- **In its file metadata.** Set the IPTC digital source type for generative AI:
+- **In its alt text** (our rule). Add a fixed suffix such as "AI-generated illustration.", appended by the code so the wording lives in one place.
+- **In its file metadata** (the IPTC standard). Set the IPTC digital source type for generative AI:
 
 ```bash
 exiftool -XMP-iptcExt:DigitalSourceType="http://cv.iptc.org/newscodes/digitalsourcetype/trainedAlgorithmicMedia" cover.webp
 ```
 
-A real photo that was edited with a generative tool gets `compositeWithTrainedAlgorithmicMedia` instead. Stores take note: Google Merchant Center requires the generative AI value on AI-generated product images.
+A real photo that was edited with a generative tool gets `compositeWithTrainedAlgorithmicMedia` instead. For stores, **Google Merchant Center** requires the generative AI value on AI-generated product images ([AI-generated content](https://support.google.com/merchants/answer/14743464)).
 
 Report AI-made images without either declaration.
 
@@ -147,7 +149,7 @@ When reviewing a draft, list every claim that someone must confirm, grouped by w
 - prices and dates;
 - names, quotes and results.
 
-The draft publishes only when the list is empty. Well-written prose hides factual errors that the person who knows the product catches in seconds.
+**Our rule:** the draft publishes only when the list is empty. Well-written prose hides factual errors that the person who knows the product catches in seconds.
 
 ## Fixes
 
