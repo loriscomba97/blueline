@@ -1,62 +1,68 @@
 # Install blueline
 
-blueline is six [Agent Skills](https://agentskills.io): folders with a `SKILL.md`, the laws they need and their helper scripts. Any agent that reads skills can use them. They are tested with Claude Code and Codex.
+blueline includes six [Agent Skills](https://agentskills.io). Each folder contains a `SKILL.md`, references and scripts. Compatibility has been tested with Claude Code and Codex only.
 
 ## Requirements
 
-- Node.js 22 or later, for the helper scripts. Without Node, each law's reference gives equivalent `curl` commands.
-- Network access, for reviews of live sites.
+- Node.js 22 or later for the scripts. Without Node, use the `curl` commands in each law's reference.
+- Network access for reviews of live sites.
 
 ## With the skills installer
+
+Run this in the project where you want to use blueline:
 
 ```bash
 npx skills add loriscomba97/blueline
 ```
 
-This installs the six skills in the project you run it from. The files go to `.agents/skills/`, which Codex reads, with links for the agents you choose, such as `.claude/skills/` for Claude Code.
+This installs the six skills. Files go to `.agents/skills/`, which Codex reads, with links for the agents you choose, such as `.claude/skills/` for Claude Code.
 
 | Option | What it does |
 |---|---|
 | `-g` | Installs for your user, in `~/.agents/skills/` and `~/.claude/skills/`, instead of the project |
-| `-s blueline` | Installs one skill. Use any of the six names; `-s '*'` installs all of them |
-| `-a claude-code codex` | Chooses the agents to install for |
+| `-s blueline` | Installs the main skill only. Use any of the six names; `-s '*'` installs all six |
+| `-a claude-code codex` | Selects the agents to install for |
 | `-y` | Skips the questions |
 
-`npx skills update` updates the skills and `npx skills remove blueline` removes one. The installer collects anonymous usage data; set `DISABLE_TELEMETRY=1` to turn it off, as [its README](https://github.com/vercel-labs/skills) describes.
+The installer collects anonymous usage data. Set `DISABLE_TELEMETRY=1` to turn it off.
+
+## Check and use the install
+
+Run `npx skills list`, or ask your agent which skills are available. The six names start with `blueline`; if you selected one, expect only that skill.
+
+Call the main skill directly, replacing the URL with a site you own or may review:
+
+- **Claude Code:** `/blueline https://www.example.com`
+- **Codex:** `$blueline https://www.example.com`, or `/skills` to select a skill.
+
+Use the other skill names in the same way for a focused review. You can also ask in plain words so the agent can select a matching skill:
+
+| Skill | Covers | Example request |
+|---|---|---|
+| `blueline` | All ten laws | "Review this site and tell me what to fix first." |
+| `blueline-crawl` | Laws 1 to 3: HTML, URLs and crawl access | "Check whether crawlers can read these pages." |
+| `blueline-claims` | Laws 4 and 5: facts, structured data and claims | "Check the prices and FAQ on this page." |
+| `blueline-content` | Laws 5 to 7: claims, content and internal links | "Review this article before publishing." |
+| `blueline-speed` | Laws 8 and 9: speed and media | "Check what slows down this page." |
+| `blueline-launch` | Law 10, with 1 to 3: launches and migrations | "Review this site before the migration." |
+
+The report lists findings with evidence, severity, fixes and verification steps. Checks that cannot run are marked "not verified". Real-user speed data for check 8.1 needs a CrUX API key in the `CRUX_API_KEY` environment variable. Comparing raw and rendered HTML needs an agent with a browser.
+
+## Update or remove
+
+`npx skills update` updates installed skills. `npx skills remove blueline` removes the main skill; use another skill's name to remove that one.
 
 ## By hand
 
-Copy the folders in [`skills/`](../skills) into your agent's skills folder. Each skill is self-contained: its references and scripts are inside its own folder.
+Copy the folders you need from [`skills/`](../skills) into your agent's skills folder. Keep each folder intact: its references and scripts are included.
 
 | Agent | For one project | For your user |
 |---|---|---|
 | Claude Code | `.claude/skills/` | `~/.claude/skills/` |
 | Codex | `.agents/skills/` | `~/.agents/skills/` |
 
-## Use it
-
-Ask in plain words. Your agent picks the skill that matches the request:
-
-| Skill | Covers | Try |
-|---|---|---|
-| `blueline` | All ten laws | "Review https://www.example.com and tell me what to fix first." |
-| `blueline-crawl` | Laws 1 to 3: what crawlers and AI assistants can read | "Can Google and AI assistants crawl and index https://www.example.com?" |
-| `blueline-claims` | Laws 4 and 5: facts, structured data, claims | "Fact-check the prices and the FAQ on https://www.example.com/pricing." |
-| `blueline-content` | Laws 5 to 7: search intent, copy, internal links | "Review this blog post before we promote it." |
-| `blueline-speed` | Laws 8 and 9: speed, images, video | "Why is https://www.example.com/blog/post slow?" |
-| `blueline-launch` | Law 10, with 1 to 3: launches and migrations | "We move the site to a new platform next week. What do we check?" |
-
-To call a skill directly:
-
-- **Claude Code:** `/blueline https://www.example.com`, or `/blueline-speed` and the other names.
-- **Codex:** `$blueline https://www.example.com`, or `/skills` to pick one.
-
 ## When many skills are installed
 
-Agents list every installed skill for the model, and the list has a limit. Codex keeps it within about 2% of the model's context window, or 8,000 characters when the window is unknown. With many skills installed, it shortens their descriptions first, then leaves some skills out, as the Skills page of the Codex documentation explains.
+Codex keeps its skills list within about 2% of the model's context window, or 8,000 characters when the window is unknown. With many skills installed, it shortens descriptions first, then leaves skills out.
 
-If blueline does not start on its own, call it directly as above, or turn off the skills and plugins you do not use.
-
-## Check the install
-
-Ask your agent which skills it has, or run `npx skills list`. The six names start with `blueline`.
+If blueline does not start automatically, call it directly or turn off skills and plugins you do not use.

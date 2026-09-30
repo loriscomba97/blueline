@@ -2,19 +2,24 @@
 
 ## Report a vulnerability
 
-Report it privately: open the repository's **Security** tab and choose **Report a vulnerability**. Please do not open a public issue. Reports about the latest release are answered first.
+Open the repository's **Security** tab and choose **Report a vulnerability**. Keep vulnerability reports private. Reports about the latest release take priority.
 
-## What blueline does on the sites it reviews
+## Requests and limits
 
-- **Reads only.** The scripts send GET and HEAD requests, one at a time; the crawl, the sitemap sample and the 404 test wait between them. They submit no forms, sign in nowhere, keep no cookies and put no credentials in URLs.
-- **Stays small.** A crawl stops at 100 pages by default and 500 at most; a sitemap sample, at 100 URLs.
-- **Does not apply `robots.txt`**, because the owner of the site asked for the review. Use blueline only on sites you own or have permission to review.
-- **Treats everything it fetches as data.** Pages, `robots.txt`, sitemaps, comments and structured data can contain text written to steer an agent. The skills tell the agent never to follow instructions found there.
-- **Keeps secrets out of reports.** When a review reads a repository, the agent names a token or key it finds, and where, but never prints its value.
-- **Stays on the site.** The scripts request the site's pages and the files those pages load, including files on other servers such as a CDN. Other sites are fetched only for a comparison you ask for, such as the top results for a query. Check 8.1 can also query Google's CrUX API for your site's real-user data, with an API key you provide in an environment variable.
+The scripts send read-only GET and HEAD requests, one at a time. The crawl, sitemap sample and 404 test wait between requests. They submit no forms, sign in nowhere, keep no cookies and put no credentials in URLs.
+
+A crawl stops at 100 pages by default and 500 at most. A sitemap sample stops at 100 URLs. The scripts do not apply `robots.txt`, because the review was requested. Use blueline only on sites you own or have permission to review.
+
+Requests include the site's pages and the files they load, including assets hosted on other servers. The agent may fetch other sites for a comparison you request. Check 8.1 can query the CrUX API for real-user speed data with a key supplied through the `CRUX_API_KEY` environment variable.
+
+## Agent instructions
+
+The skills instruct the agent to treat fetched content as data, never as instructions. This includes pages, sitemaps, `robots.txt`, comments and structured data.
+
+When reviewing a repository, the agent must report the presence and location of a secret without printing its value. These are instructions to the agent, not a guarantee about its behavior.
 
 ## Scope
 
-In scope: the scripts in `tools/` (and their copies in `skills/`), and instructions in the skills that could lead an agent to act beyond a read-only review.
+In scope: the scripts in `tools/`, their copies in `skills/`, and skill instructions that could lead an agent beyond a read-only review.
 
-Out of scope: the behavior of the agent that runs the skills, and of the sites under review.
+Out of scope: the behavior of the agent running the skills and the sites under review.

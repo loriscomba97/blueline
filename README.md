@@ -1,8 +1,8 @@
 # blueline
 
-**Your coding agent reviews your marketing site against ten laws, and proves every finding.**
+**Review your marketing site with evidence and a clear order of fixes.**
 
-blueline is an agent skill for Claude Code, Codex and other agents that read [Agent Skills](https://agentskills.io). Point it at a live site, a page, a draft or a pull request. It runs read-only checks, quotes the evidence and tells you what to fix first. A blueline is the proof a printer checks before the print run.
+blueline is an [Agent Skill](https://agentskills.io) tested with Claude Code and Codex. Point it at a site, page, draft or pull request. It guides your agent through ten laws, from the HTML crawlers read to the checks before a launch. A blueline is the proof a printer checks before the print run.
 
 [Get started](#get-started) · [The ten laws](laws/README.md) · [Example report](docs/example-report.md) · [Issues](https://github.com/loriscomba97/blueline/issues)
 
@@ -11,25 +11,29 @@ blueline is an agent skill for Claude Code, Codex and other agents that read [Ag
 
 ## See it in action
 
-The [example report](docs/example-report.md) is a real review of the test site in `test/fixtures/broken`, where problems are planted on purpose: an article kept out of search by a stray `noindex`, a price that differs between the page and its structured data, a `[TODO]` left in the text, and more than a dozen others. The review finds every one, with its evidence.
+The [example report](docs/example-report.md) is a real review of a test site with deliberate errors. It shows an article blocked by `noindex`, a price mismatch between the page and its structured data, and a published `[TODO]`, with evidence and fixes.
 
 ## Get started
 
-Requires an agent that reads skills (tested with Claude Code and Codex) and Node.js 22 or later for the helper scripts.
+Use Claude Code or Codex, with Node.js 22 or later for the scripts. Without Node, use the `curl` commands in each law's reference.
+
+Run this in your project:
 
 ```bash
 npx skills add loriscomba97/blueline
 ```
 
-This installs the six skills in the current project. Add `-g` to install them for every project, or `-s blueline` for the main skill only. Other ways to install are in [docs/install.md](docs/install.md).
+This installs six skills. Add `-g` for all your projects, or `-s blueline` for the main skill only. See [installation options](docs/install.md) for agent selection and setup details.
 
-Then ask your agent, in plain words:
+Then ask your agent:
 
 ```text
 Review https://www.example.com and tell me what to fix first.
 ```
 
-The report opens with a verdict for each law. Every finding follows, with its severity, the evidence, why it matters, the fix and how to check that the fix worked. To call the skill directly, type `/blueline https://www.example.com` in Claude Code, or `$blueline https://www.example.com` in Codex.
+Replace the URL with a site you own or may review. To call the skill directly, use `/blueline <url>` in Claude Code or `$blueline <url>` in Codex.
+
+Expect a verdict for each law, then findings with severity, evidence, a fix and a way to verify it. Checks that need unavailable data or tools appear as "not verified".
 
 ## The ten laws
 
@@ -44,25 +48,24 @@ The report opens with a verdict for each law. Every finding follows, with its se
 9. Media is prepared once and cached forever.
 10. Nothing ships without a gate.
 
-Each law is a page of [numbered checks](laws/README.md), 85 in all, each with the evidence that proves a finding, a default severity, fixes and exceptions.
+The laws contain [85 numbered checks](laws/README.md), with evidence requirements, default severities, fixes and exceptions.
 
 ## What it does
 
-- **Proves every finding.** A finding quotes a command and its output, a file and line, or the text on the page. What it cannot check is listed as "not verified", never estimated.
-- **Keeps Google's guidance apart from its own rules.** Official guidance is marked "Google says", with its link and the date it was checked. Thresholds such as "about 250 KB for a content image" are marked "our rule".
-- **Reviews the whole site, or one area.** Next to the full review, five skills cover one area each: `blueline-crawl` (laws 1 to 3), `blueline-claims` (4 and 5), `blueline-content` (5 to 7), `blueline-speed` (8 and 9) and `blueline-launch` (10, with 1 to 3) for launches, redesigns and migrations. Your agent picks the right one from your request.
+- **Makes findings traceable.** Each finding must quote a command and output, a file and line, or page text. Missing evidence is recorded, never estimated.
+- **Separates sources from rules.** Official guidance is marked "Google says", with a link and the date checked: 30 September 2026. Thresholds and severities are marked "our rule".
+- **Fits the review to the task.** Use `blueline` for all ten laws, `blueline-crawl` for laws 1 to 3, `blueline-claims` for 4 and 5, `blueline-content` for 5 to 7, `blueline-speed` for 8 and 9, or `blueline-launch` for 10 with 1 to 3.
 
 ## How it works
 
-Each skill is a `SKILL.md` with the laws it needs and small Node.js scripts with no dependencies. The scripts request pages one at a time and print JSON: the facts they found, and leads that name the check they belong to. The agent confirms each lead against the law before reporting it, then writes the review in one fixed format.
+Each skill includes its instructions, references and scripts. Seven Node.js scripts have no dependencies. They collect facts and flag possible problems as JSON. The agent checks those signals against the laws and writes the report. Some checks require the agent's judgment or additional evidence beyond script output.
 
 ## Limits
 
-- **Read only.** GET and HEAD requests: no forms, sign-ins or cookies. Everything a page contains is treated as data, never as instructions.
-- **For sites you may review.** The crawl stops at 100 pages by default and does not apply `robots.txt`, because the review was asked for. Use it on sites you own or have permission to review.
-- **Some checks need more.** Real-user speed data needs a CrUX API key. Comparing the raw HTML with the rendered page needs an agent with a browser. Without them, those checks are marked "not verified".
-- **No promises.** The laws remove the reasons a page fails. They do not guarantee rankings, AI citations or traffic.
+- **Read only.** Scripts send GET and HEAD requests, one at a time. The crawl defaults to 100 pages and does not apply `robots.txt`, because the review was requested. See [request limits and safety](SECURITY.md).
+- **Additional tools.** Real-user speed data needs a CrUX API key in an environment variable. Comparing raw and rendered HTML needs an agent with a browser. Otherwise, those checks are "not verified".
+- **Results vary.** The laws do not guarantee rankings, AI citations or traffic.
 
 ## License and contributing
 
-MIT © Loris Comba. [CONTRIBUTING.md](CONTRIBUTING.md) explains how the skills are built from `laws/` and how to propose a check. Report security issues privately, as [SECURITY.md](SECURITY.md) describes.
+[MIT](LICENSE) © Loris Comba. Report reproducible problems, false alarms or outdated sources through [CONTRIBUTING.md](CONTRIBUTING.md). Follow [SECURITY.md](SECURITY.md) to report vulnerabilities privately.
