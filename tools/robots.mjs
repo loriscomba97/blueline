@@ -42,7 +42,7 @@ for (const token of ['googlebot', '*']) {
   const { group, rules } = rulesFor(parsed, token);
   if (token === 'googlebot' && group !== 'named') continue;
   if (!isAllowed(rules, '/')) {
-    signals.push({ check: '10.1', message: `the rules for ${token} disallow "/": the whole site is closed to ${token === '*' ? 'every crawler without its own group' : 'Googlebot'}` });
+    signals.push({ check: '10.2', message: `the rules for ${token} disallow "/": the whole site is closed to ${token === '*' ? 'every crawler without its own group' : 'Googlebot'}` });
     continue;
   }
   const blocked = assets.filter((p) => !isAllowed(rules, p));

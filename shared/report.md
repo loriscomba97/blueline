@@ -13,7 +13,7 @@ Every blueline review has the same shape, so a reader can compare two reviews at
 2. **File it under the check written for it.** Every problem goes under the most specific check that describes it, and mentions the other checks it touches. When two checks fit, these win:
    - `noindex` in a meta tag or a header, and staging settings: 10.1;
    - a link to `#` that promises a page that does not exist yet ("Read more"): 5.3; a link that navigates only with JavaScript: 1.4;
-   - `robots.txt`, its rules and its status: 10.2;
+   - `robots.txt`: its status, rules that close pages or the whole site, and the Sitemap line: 10.2; rules that block CSS or JavaScript: 1.6;
    - missing image or video dimensions: 9.3;
    - a missing or wrong canonical: 2.2;
    - FAQ, breadcrumb or other markup without visible content: 4.2.
@@ -88,11 +88,21 @@ Sources in the references checked on 30 September 2026
 
 ## Fix soon
 
-### 2. ... (same format; numbers continue across the three sections)
+### 2. {What is wrong} · Law {n}, check {n.n}
+
+- **Severity:** Fix soon{, and the default and the reason when you changed it}
+- **Evidence:** ...
+- **Why it matters:** ...
+- **Fix:** ...
+- **Verify:** ...
 
 ## Polish
 
-### 3. ... (same format, shorter)
+### 3. {What is wrong} · Law {n}, check {n.n}
+
+- **Evidence:** ... · **Fix:** ... · **Verify:** ...
+
+(Numbers continue across the three sections.)
 
 ## Open decisions
 
@@ -115,6 +125,17 @@ Sources in the references checked on 30 September 2026
 **Closing sections.** A skill can ask for a section of its own after "What holds", such as the launch gate of `blueline-launch`. It goes before the closing line.
 
 **Other sites.** When the review compares the page with other sites (the top results for a query), quote only their headings and short phrases. Paraphrase the rest.
+
+## Before you send it
+
+Check the report against this list, and correct it before you answer:
+
+- The header has its lines: date and scope, pages sampled, choices made without asking, outside this review, sources checked.
+- The verdict table has four columns: Law, Status, In one line, Findings.
+- Every finding has its own numbered heading with its check, and its lines: Severity, Evidence, Why it matters, Fix and Verify. In Polish, one line of evidence, fix and verify is enough.
+- One problem per finding. Never merge two checks into one finding: mention the other checks it touches instead.
+- The only severities are Blocker, Fix soon and Polish, and every change from the default says why.
+- The sections come in the template's order, and "Before anything else" appears only when a page cannot be indexed.
 
 ## After the report
 

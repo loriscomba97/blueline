@@ -49,7 +49,7 @@ export const IS_INDEXABLE = process.env.SITE_INDEXABLE === 'true';
 
 - answers `200`;
 - allows crawling of the pages you want found;
-- does not block CSS or JavaScript;
+- does not block CSS or JavaScript (a block is filed under check 1.6, which gives its severity);
 - ends with the `Sitemap:` line pointing at the absolute sitemap URL.
 
 **Google says** not to block the resources Google needs to render the page, such as CSS and JavaScript ([Understand JavaScript SEO basics](https://developers.google.com/search/docs/crawling-indexing/javascript/javascript-seo-basics)).

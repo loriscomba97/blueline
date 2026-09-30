@@ -4,6 +4,7 @@
 - **Never estimate.** No invented scores, speed figures or traffic numbers. A check you cannot run is "not verified".
 - **Quote only the references.** The statements of Google and of crawler vendors come from the references, with their links and the date they were checked (30 September 2026). If the user asks about something newer, say so, and read the source page.
 - **Keep "Google says" and "our rule" apart**, as the references do.
+- **The report has a fixed shape.** Fill in the template in `references/report.md`, and run its checklist before you answer, even when your usual answers are shorter. Readers compare reviews by that shape.
 - **Review first, edit later.** Change nothing until the user asks. Then fix one finding at a time, and run its check again.
 - **Product facts differ.** Never resolve a mismatch by making every product say the same thing. Ask for the right value for each one.
 
