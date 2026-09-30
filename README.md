@@ -54,7 +54,18 @@ The laws contain [85 numbered checks](laws/README.md), with evidence requirement
 
 - **Makes findings traceable.** Each finding must quote a command and output, a file and line, or page text. Missing evidence is recorded, never estimated.
 - **Separates sources from rules.** Official guidance is marked "Google says", with a link and the date checked: 30 September 2026. Thresholds and severities are marked "our rule".
-- **Fits the review to the task.** Use `blueline` for all ten laws, `blueline-crawl` for laws 1 to 3, `blueline-claims` for 4 and 5, `blueline-content` for 5 to 7, `blueline-speed` for 8 and 9, or `blueline-launch` for 10 with 1 to 3.
+- **Fits the review to the task.** Choose a full review or focus on one area:
+
+| Skill | When to use it | Laws |
+|---|---|---|
+| `blueline` | Review a whole site and decide what to fix first. | All ten |
+| `blueline-crawl` | Check what crawlers can read, which URL represents each page, and whether redirects and missing pages work. | 1 to 3 |
+| `blueline-claims` | Check that prices, facts and structured data agree, and that claims have supporting evidence. | 4 and 5 |
+| `blueline-content` | Review a page or draft for checkable claims, a clear answer to its target question, and useful internal links. | 5 to 7 |
+| `blueline-speed` | Review loading order, scripts, images, video and caching to find what needs attention. | 8 and 9 |
+| `blueline-launch` | Check a launch, redesign or migration for indexing mistakes, URL changes and broken redirects before release. | 10, with 1 to 3 |
+
+Ask your agent in plain words, or call a skill by name. For example, use `/blueline-speed <url>` in Claude Code or `$blueline-speed <url>` in Codex. Each skill includes the references and scripts it needs, so it can be installed on its own.
 
 ## How it works
 
