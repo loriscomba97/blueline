@@ -6,11 +6,12 @@
  * data, and "signals" that point at the law checks worth a closer look.
  *
  * Usage: node page.mjs <url> [--user-agent "..."] [--full]
- *   --full   include every link, image and script instead of the first 25 of each
+ *   --full   include every link, image and script instead of the first 25 of each, and
+ *            structured data blocks of any size
  *
  * A signal is a lead, not a verdict: confirm it before reporting a finding.
  */
-import { analyzeHtml, fail, follow, GENERIC_ANCHORS, parseArgs, print, sameExceptSlash, toHttpUrl, USER_AGENT } from './lib.mjs';
+import { analyzeHtml, aspectRatioClasses, fail, follow, GENERIC_ANCHORS, parseArgs, print, request, sameExceptSlash, toHttpUrl, USER_AGENT } from './lib.mjs';
 
 const { positional, values } = parseArgs(process.argv.slice(2), { flags: ['full', 'help'], options: ['user-agent'] });
 if (values.help || positional.length !== 1) fail('usage: node page.mjs <url> [--user-agent "..."] [--full]');
@@ -26,7 +27,7 @@ const result = {
   status: final.status,
   error: final.error ?? null,
   chain,
-  headers: pick(final.headers, ['content-type', 'cache-control', 'x-robots-tag', 'content-encoding', 'server', 'age', 'x-cache', 'cf-cache-status']),
+  headers: pick(final.headers, ['content-type', 'cache-control', 'cdn-cache-control', 'x-robots-tag', 'content-encoding', 'server', 'age', 'x-cache', 'x-cache-status', 'cf-cache-status', 'x-vercel-cache', 'x-nextjs-cache']),
   timeToFirstByteMs: final.ttfbMs ?? null,
   truncated: final.truncated ?? false,
 };
@@ -43,8 +44,9 @@ const pageOrigin = new URL(final.url).origin;
 const signals = [];
 
 // Law 1: the first HTML response
-if (page.wordCount < 120) signals.push(signal('1.1', `only ${page.wordCount} words of text in the raw HTML: compare with the page in a browser`));
+for (const marker of page.clientRendering) signals.push(signal('1.1', `${marker}: compare the raw HTML with the page in a browser`));
 if (page.emptyAppRoot) signals.push(signal('1.1', 'an empty application root element (root, app, __next or __nuxt): the content is probably rendered by JavaScript'));
+if (page.wordCount < 50 && !page.emptyAppRoot) signals.push(signal('1.1', `only ${page.wordCount} words of text in the raw HTML: a short page, or content that arrives with JavaScript`));
 if (page.titles.length !== 1) signals.push(signal('1.2', `${page.titles.length} <title> elements in the head`));
 if (page.descriptions.length !== 1) signals.push(signal('1.2', `${page.descriptions.length} meta descriptions`));
 if (page.canonicals.length !== 1) signals.push(signal('1.2', `${page.canonicals.length} canonical link elements`));
@@ -90,6 +92,8 @@ if (skips.length) signals.push(signal('6.5', `heading levels skipped: ${skips.sl
 // Law 7: anchors
 const generic = page.anchors.filter((a) => a.internal && GENERIC_ANCHORS.has(a.text.toLowerCase()));
 if (generic.length) signals.push(signal('7.2', `${generic.length} internal links with generic anchor text: ${[...new Set(generic.map((a) => `"${a.text}"`))].join(', ')}`));
+const long = page.anchors.filter((a) => a.internal && a.text.split(/\s+/).length > 12);
+if (long.length) signals.push(signal('7.2', `${long.length} internal links have anchors longer than 12 words, often a link wrapped around a whole card: "${long[0].text.slice(0, 70)}..."`));
 
 // Law 8: the page first
 const blocking = page.scripts.filter((s) => s.inHead && s.src && s.origin !== pageOrigin && !s.async && !s.defer && !s.module);
@@ -106,7 +110,14 @@ if (final.ttfbMs > 1000) signals.push(signal('8.9', `first byte after ${final.tt
 
 // Law 9: media
 const noDimensions = page.images.filter((i) => !i.width || !i.height);
-if (noDimensions.length) signals.push(signal('9.3', `${noDimensions.length} of ${page.images.length} images have no width and height attributes (check for a CSS aspect-ratio)`));
+if (noDimensions.length) {
+  const sizedClasses = await cssAspectRatioClasses(page, pageOrigin);
+  const unsized = noDimensions.filter((i) => !/aspect-ratio/i.test(i.style) && ![...i.class.split(/\s+/), ...i.context].some((c) => sizedClasses.has(c)));
+  if (unsized.length) {
+    signals.push(signal('9.3', `${unsized.length} of ${page.images.length} images have no width and height, and no aspect-ratio rule was found for their classes: ${unsized.slice(0, 3).map((i) => i.src).join(', ')}`));
+  }
+  result.cssAspectRatioClasses = [...sizedClasses].slice(0, 20);
+}
 const iframesNoSize = page.iframes.filter((f) => !f.width || !f.height);
 if (iframesNoSize.length) signals.push(signal('9.3', `${iframesNoSize.length} iframes have no width and height attributes`));
 const noAlt = page.images.filter((i) => i.alt === null);
@@ -152,10 +163,24 @@ result.page = {
   stylesheets: page.stylesheets,
   preloads: page.preloads,
   preconnects: page.preconnects,
-  structuredData: page.jsonld.map((j) => (j.ok ? { ok: true, types: j.types } : j)),
+  structuredData: page.jsonld.map((j) => {
+    if (!j.ok) return j;
+    const json = JSON.stringify(j.data);
+    return values.full || json.length <= 8000 ? { ok: true, types: j.types, data: j.data } : { ok: true, types: j.types, preview: `${json.slice(0, 8000)}...`, note: 'run with --full for the whole block' };
+  }),
 };
 result.signals = signals;
 print(result);
+
+/** Classes that get an aspect-ratio from the page's inline CSS or from up to three of its own stylesheets. */
+async function cssAspectRatioClasses(page, origin) {
+  const classes = aspectRatioClasses(page.inlineCss);
+  for (const sheet of page.stylesheets.filter((s) => s.origin === origin).slice(0, 3)) {
+    const res = await request(sheet.href);
+    if (res.status === 200) for (const c of aspectRatioClasses(res.body)) classes.add(c);
+  }
+  return classes;
+}
 
 function signal(check, message) {
   return { check, message };

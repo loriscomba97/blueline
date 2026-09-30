@@ -8,6 +8,8 @@
  * Usage: node variants.mjs <url>
  *
  * The target is the page's own canonical when it declares one, otherwise the URL it finally loads.
+ * One more request adds a tracking parameter (?utm_source=blueline), which must not create a page
+ * of its own (check 2.5).
  */
 import { analyzeHtml, fail, follow, parseArgs, print, toHttpUrl } from './lib.mjs';
 
@@ -44,6 +46,7 @@ for (const scheme of ['http:', 'https:']) {
 const rows = [];
 const signals = [];
 const silentHosts = new Map();
+if (!canonical) signals.push({ check: '2.2', message: `the page declares no single absolute canonical, so the target is simply the URL it loads: ${target.href}` });
 for (const variant of variants) {
   const { chain, final } = await follow(variant);
   const hops = chain.length - 1;
@@ -60,7 +63,7 @@ for (const variant of variants) {
   rows.push(row);
   if (variant === target.href) continue;
   if (final.error && final.status === 0) {
-    silentHosts.set(new URL(final.url).host, final.error);
+    silentHosts.set(new URL(final.url).origin, final.error);
     continue;
   }
   if (final.status === 200 && final.url !== target.href) {
@@ -78,7 +81,24 @@ for (const variant of variants) {
   if (temporary.length) signals.push({ check: '2.1', message: `${variant} uses a temporary redirect (${temporary.map((c) => c.status).join(', ')})` });
 }
 for (const [silent, error] of silentHosts) {
-  signals.push({ check: '2.1', message: `${silent} does not answer over HTTPS (${error}): no duplicate, but visitors who type it reach nothing` });
+  signals.push({ check: '2.1', message: `${silent} does not answer (${error}): no duplicate, but visitors who type it reach nothing` });
+}
+
+// A tracking parameter must not create a page of its own.
+const tracked = new URL(target.href);
+tracked.searchParams.set('utm_source', 'blueline');
+const withParam = await follow(tracked.href);
+const paramCanonicals = /html/i.test(withParam.final.headers['content-type'] ?? '') ? analyzeHtml(withParam.final.body, withParam.final.url).canonicals : [];
+const paramRow = {
+  variant: tracked.href,
+  statuses: withParam.chain.map((c) => c.status),
+  final: withParam.final.url,
+  finalStatus: withParam.final.status,
+  canonical: paramCanonicals.length === 1 ? paramCanonicals[0] : null,
+};
+rows.push(paramRow);
+if (withParam.final.status === 200 && withParam.final.url !== target.href && paramRow.canonical !== target.href) {
+  signals.push({ check: '2.5', message: `${tracked.href} answers 200 ${paramRow.canonical ? `with the canonical ${paramRow.canonical}` : 'with no canonical'}: tracking parameters create duplicate pages` });
 }
 
 print({

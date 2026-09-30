@@ -4,6 +4,7 @@ import { test } from 'node:test';
 import { gzipSync } from 'node:zlib';
 import {
   analyzeHtml,
+  aspectRatioClasses,
   decodeEntities,
   isAllowed,
   isExpiringUrl,
@@ -80,6 +81,15 @@ test('an empty application root is detected', () => {
   const page = analyzeHtml('<html><head><title>App</title></head><body><div id="root"></div><script src="/main.js"></script></body></html>', 'https://example.com/');
   assert.equal(page.emptyAppRoot, true);
   assert.equal(page.wordCount, 0);
+});
+
+test('images carry their wrapper classes, and CSS aspect-ratio rules are found', () => {
+  const html = `<html><head><style>.card-cover{aspect-ratio:16/9} @media (min-width: 40em) { .hero img { aspect-ratio: 2 } }</style></head>
+<body><a class="card"><div class="card-cover"><img src="/c.webp" alt="Cover"></div></a><template data-dgst="BAILOUT_TO_CLIENT_SIDE_RENDERING"></template></body></html>`;
+  const page = analyzeHtml(html, 'https://example.com/');
+  assert.deepEqual(page.images[0].context, ['card', 'card-cover']);
+  assert.equal(page.clientRendering.length, 1);
+  assert.deepEqual([...aspectRatioClasses(page.inlineCss)].sort(), ['card-cover', 'hero']);
 });
 
 test('attributes and entities', () => {

@@ -64,9 +64,11 @@ if (crawlers.length && !ai.some((c) => c.group === 'named')) {
   signals.push({ check: '1.7', message: 'no AI crawler is named in robots.txt: the policy is implicit (the * group)' });
 }
 
+const blockedCount = ai.filter((c) => !c.rootAllowed).length;
 print({
   ...result,
   sitemaps: parsed.sitemaps,
+  aiSummary: `${blockedCount} of ${ai.length} AI crawler tokens may not fetch "/"; ${ai.filter((c) => c.group === 'named').length} have a group of their own`,
   groups: parsed.groups.map((g) => ({ agents: g.agents, rules: g.rules.length })),
   aiCrawlers: ai,
   signals,

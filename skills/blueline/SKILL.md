@@ -37,6 +37,8 @@ The AI crawlers and what each one does: [ai-crawlers.md](references/ai-crawlers.
    - a change (a diff or a pull request).
 
    If the request does not say, ask one question: which site or page, and a full review or one area? When the user just points at a site, do a full review.
+
+   When you cannot ask, for example in a one-shot or delegated run, do not wait. Make the choices yourself, and state them in the report header.
 2. **Find out what evidence you can collect.** Network access, the repository, and any data the user can share:
    - a Search Console export (queries and pages);
    - field data;
@@ -52,6 +54,8 @@ The AI crawlers and what each one does: [ai-crawlers.md](references/ai-crawlers.
    - a made-up URL for the 404.
 
    Add every page the user named. State the list before you start.
+
+   When the site has no page of a template (no pricing page, say), note it in the header and take the closest page instead. A missing template is not a finding.
 4. **Pick the laws.** A full review covers all ten. A narrower request maps to a family:
 
    | The user asks about | Laws |
@@ -71,11 +75,28 @@ The scripts in `scripts/` need Node.js 22 or later and nothing else. Each prints
 node scripts/page.mjs https://www.example.com/pricing        # raw HTML: head tags, headings, links, images, scripts, structured data
 node scripts/variants.mjs https://www.example.com/pricing    # http and https, www, trailing slash and case variants, hop by hop
 node scripts/robots.mjs https://www.example.com              # robots.txt as Google applies it, and each AI crawler's access
-node scripts/sitemap.mjs https://www.example.com --limit 50  # sitemap entries: live, canonical, indexable; lastmod
+node scripts/sitemap.mjs https://www.example.com            # sitemap entries: live, canonical, indexable; lastmod
 node scripts/not-found.mjs https://www.example.com --from-sitemap   # made-up URLs must answer 404
 ```
 
-Run them with the path of this skill's folder. Without Node, use the `curl` commands in each law's reference.
+Run them from this skill's folder, or call them by their full path.
+
+**Without Node**, use the `curl` commands in each law's reference. Some of them send a HEAD request (`curl -I`) or save `page.html` in the current folder. Under a GET-only or write-nothing policy, use `curl -s -D - -o /dev/null <url>` for headers, and pipes instead of files.
+
+**Without a browser**, check 1.1 cannot compare the raw HTML with the rendered page. Look for the signs of client-side rendering instead:
+- an empty application root;
+- a framework's bail-out marker, which `page.mjs` reports;
+- text that exists only inside a JSON payload in the page.
+
+Then mark the browser comparison as not verified.
+
+**Some checks have no script yet**:
+- inbound link counts (7.1);
+- JavaScript weight (8.3);
+- AI metadata inside image files (5.8);
+- intrinsic image sizes (9.1).
+
+Use the method in the law's reference.
 
 - **Code.** Read the files that render the sampled pages: the framework configuration, the layouts, the metadata, and the modules that hold prices, FAQ and authors.
 - **A draft.** Read it whole, then list its claims before judging its structure.

@@ -56,8 +56,11 @@ while (queue.length && read.length < 50) {
 
 const lastmods = entries.map((e) => e.lastmod).filter(Boolean);
 const distinctLastmods = new Set(lastmods).size;
-if (entries.length >= 10 && lastmods.length === entries.length && distinctLastmods === 1) {
-  signals.push({ check: '3.3', message: `every entry has the same lastmod (${lastmods[0]}): probably the build time, not the page's change date` });
+const counts = new Map();
+for (const value of lastmods) counts.set(value, (counts.get(value) ?? 0) + 1);
+const [commonLastmod, commonCount] = [...counts].sort((a, b) => b[1] - a[1])[0] ?? [null, 0];
+if (lastmods.length >= 3 && commonCount / lastmods.length >= 0.8) {
+  signals.push({ check: '3.3', message: `${commonCount} of ${lastmods.length} dated entries share the lastmod ${commonLastmod}: probably the build time, not each page's change date` });
 }
 const hosts = new Set(entries.map((e) => safeHost(e.loc)));
 if (hosts.size > 1) signals.push({ check: '2.3', message: `the sitemap lists URLs on ${hosts.size} hosts: ${[...hosts].join(', ')}` });
@@ -79,7 +82,19 @@ for (const [i, entry] of sample.entries()) {
   rows.push({ url: entry.loc, lastmod: entry.lastmod, status: chain.map((c) => c.status), ...(problems.length ? { problems } : {}) });
 }
 const failing = rows.filter((r) => r.problems);
-if (failing.length) signals.push({ check: '3.3', message: `${failing.length} of ${rows.length} sampled URLs are not live, canonical and indexable` });
+const byKind = { redirects: 0, errors: 0, canonical: 0, noindex: 0 };
+for (const r of failing) {
+  for (const p of r.problems) {
+    if (p.startsWith('redirects')) byKind.redirects++;
+    else if (p.startsWith('answers')) byKind.errors++;
+    else if (p === 'noindex') byKind.noindex++;
+    else byKind.canonical++;
+  }
+}
+if (failing.length) {
+  const parts = Object.entries(byKind).filter(([, n]) => n).map(([kind, n]) => `${n} ${kind === 'errors' ? 'not answering 200' : kind === 'canonical' ? 'with another or no canonical' : kind === 'redirects' ? 'redirecting' : 'noindex'}`);
+  signals.push({ check: '3.3', message: `${failing.length} of ${rows.length} sampled URLs have a problem: ${parts.join(', ')}` });
+}
 
 print({
   sitemaps: read,
@@ -88,6 +103,8 @@ print({
   distinctLastmods,
   sampled: rows.length,
   failing: failing.length,
+  problems: byKind,
+  commonLastmod: commonCount > 1 ? { value: commonLastmod, entries: commonCount } : null,
   rows: failing.length ? failing : rows.slice(0, 10),
   signals,
 });

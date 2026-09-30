@@ -35,6 +35,12 @@
 export const IS_INDEXABLE = process.env.SITE_INDEXABLE === 'true';
 ```
 
+**Our rule, from Google's guidance:** to keep a site out of search, do one of two things:
+- serve `noindex` on pages that crawlers may fetch;
+- put the site behind a password.
+
+`Disallow: /` alone does not keep URLs out of the index. Next to a `noindex`, it also hides the `noindex` from crawlers, so the combination is wrong whatever the intent.
+
 ### 10.2 robots.txt is deliberate
 
 **Where:** live URL · **Default severity:** blocker when it blocks the site; fix soon otherwise

@@ -137,7 +137,8 @@ Embeds from video platforms load lazily, or through a click-to-play preview. Rep
 `og:image` has these properties:
 
 - it is an absolute URL that answers `200`;
-- it is about 1200 × 630 pixels (our rule, the common size for link previews);
+- it is at least 1200 × 630 pixels, close to 1.91:1. **Meta says** so for link shares, with a limit of 8 MB ([Images in link shares](https://developers.facebook.com/docs/sharing/webmasters/images));
+- it is a PNG, JPEG or WebP (our rule: many link previews do not render SVG);
 - it is specific to the page where the page has its own image.
 
 The Twitter or X card tags agree with it. Report missing, broken or undersized sharing images.
@@ -186,3 +187,4 @@ Checked on 30 September 2026.
 - web.dev: [Optimize Cumulative Layout Shift](https://web.dev/articles/optimize-cls)
 - web.dev: [Prevent unnecessary network requests with the HTTP Cache](https://web.dev/articles/http-cache)
 - Google Search Central: [Google Images SEO best practices](https://developers.google.com/search/docs/appearance/google-images)
+- Meta for Developers: [Images in link shares](https://developers.facebook.com/docs/sharing/webmasters/images)

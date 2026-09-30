@@ -337,7 +337,13 @@ export function analyzeHtml(rawHtml, url) {
     };
   });
 
-  // Media
+  // Media. `context` holds the classes of the elements written just before an image, usually its
+  // wrappers, so a stylesheet rule such as `.card-cover { aspect-ratio: 16/9 }` can be matched to it.
+  const contextClasses = (index) => {
+    const before = body.slice(Math.max(0, index - 400), index);
+    const found = [...before.matchAll(/\bclass\s*=\s*(?:"([^"]*)"|'([^']*)')/gi)].flatMap((m) => (m[1] ?? m[2]).split(/\s+/)).filter(Boolean);
+    return [...new Set(found.slice(-8))];
+  };
   const images = bodyTags
     .filter((t) => t.name === 'img')
     .map((t) => ({
@@ -349,6 +355,9 @@ export function analyzeHtml(rawHtml, url) {
       fetchpriority: t.attrs.fetchpriority ?? null,
       srcset: Boolean(t.attrs.srcset),
       sizes: Boolean(t.attrs.sizes),
+      class: t.attrs.class ?? '',
+      style: t.attrs.style ?? '',
+      context: contextClasses(t.index),
     }));
   const videos = bodyTags
     .filter((t) => t.name === 'video')
@@ -382,6 +391,14 @@ export function analyzeHtml(rawHtml, url) {
 
   const placeholders = [...new Set([...text.matchAll(PLACEHOLDER)].map((m) => m[0]))];
   const emptyRoot = /<div\b[^>]*\bid\s*=\s*["'](?:root|app|__next|__nuxt)["'][^>]*>\s*<\/div>/i.test(body);
+  // Markers that frameworks leave when part of a page is rendered only in the browser.
+  const clientRendering = [
+    [/BAILOUT_TO_CLIENT_SIDE_RENDERING/, 'a component bailed out to client-side rendering (Next.js marker)'],
+    [/You need to enable JavaScript to run this app/i, 'the page asks for JavaScript to show anything'],
+  ]
+    .filter(([pattern]) => pattern.test(String(rawHtml ?? '')))
+    .map(([, label]) => label);
+  const inlineCss = [...html.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style\s*>/gi)].map((m) => m[1]).join('\n');
 
   return {
     url,
@@ -400,6 +417,8 @@ export function analyzeHtml(rawHtml, url) {
     headings,
     wordCount: text ? text.split(' ').length : 0,
     emptyAppRoot: emptyRoot,
+    clientRendering,
+    inlineCss,
     anchors,
     images,
     videos,
@@ -412,6 +431,17 @@ export function analyzeHtml(rawHtml, url) {
     placeholders,
     expiringUrls: [...referenced].filter(isExpiringUrl),
   };
+}
+
+/** Class names used in CSS rules that set an aspect-ratio, so images inside those elements keep their space. */
+export function aspectRatioClasses(css) {
+  const classes = new Set();
+  const clean = String(css).replace(/\/\*[\s\S]*?\*\//g, ' ');
+  for (const m of clean.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+    if (!/aspect-ratio\s*:/i.test(m[2])) continue;
+    for (const c of m[1].matchAll(/\.([A-Za-z_][\w-]*)/g)) classes.add(c[1]);
+  }
+  return classes;
 }
 
 // ---------------------------------------------------------------------------------------------

@@ -55,6 +55,13 @@ Usual causes:
 - an empty `<div id="root">` filled by scripts;
 - a page component rendered only on the client.
 
+**Without a browser**, the comparison cannot be made. Look for the signs instead:
+- an empty application root;
+- a framework's bail-out marker, such as Next.js's `BAILOUT_TO_CLIENT_SIDE_RENDERING`;
+- text that appears only inside a JSON payload in a `<script>`.
+
+Then mark the comparison itself as not verified.
+
 ### 1.2 Head tags are in the raw HTML, once
 
 **Where:** live URL · **Default severity:** blocker

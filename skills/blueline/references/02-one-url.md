@@ -22,7 +22,10 @@ Every other variant redirects permanently to that address in a single hop. The p
 
 ### 2.1 Every variant redirects, once, permanently
 
-**Where:** live URL · **Default severity:** blocker when a variant answers 200 with the same content; fix soon for chains or temporary redirects
+**Where:** live URL · **Default severity:**
+- blocker when a variant answers 200 with the same content and no canonical to the page;
+- polish when it answers 200 with the right canonical;
+- fix soon for chains or temporary redirects.
 
 Request the variants of a page and print the status and the redirect target:
 
@@ -39,6 +42,8 @@ Each variant should answer `301` or `308`, pointing straight at the canonical UR
 - **Duplicates:** variants that answer `200` without a canonical to the real URL.
 - **Chains:** variants that need two or more hops to reach it.
 - **Temporary redirects:** `302` or `307` used for a move that is permanent.
+
+Sometimes an extra hop comes from the host rather than from the site, for example a platform's HTTPS redirect that runs before the site's own rule. Report it as polish, and name the layer that owns the fix.
 
 ### 2.2 One canonical, pointing at itself
 

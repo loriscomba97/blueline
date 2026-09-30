@@ -31,7 +31,8 @@ Parse every JSON-LD block on the page and compare each value with the visible te
 | `Offer.price`, `priceCurrency` | The visible price and currency |
 | `author.name` | The visible byline |
 | `headline` | The H1 (or a faithful shortening) |
-| `datePublished`, `dateModified` | The visible dates |
+| `datePublished` | The visible publication date |
+| `dateModified` | The visible "updated" date, when the page shows one |
 | `Organization.sameAs` | The social profiles the site links to |
 
 Report every mismatch with both values.
@@ -44,6 +45,7 @@ Report:
 
 - `FAQPage` on a page with no visible FAQ;
 - reviews or ratings with no visible review;
+- a `BreadcrumbList` with no visible breadcrumb trail;
 - products or offers the page does not show.
 
 Markup for content the reader cannot see is exactly what the guidelines forbid. There is no longer a reward to chase either:
