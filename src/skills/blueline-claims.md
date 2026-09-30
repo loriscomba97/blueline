@@ -39,6 +39,7 @@ How to write the review: [report.md](references/report.md).
 ```bash
 node scripts/page.mjs "https://www.example.com/pricing" --full   # structured data values, and the FAQ answers, prices, headlines and authors the visible text lacks
 node scripts/assets.mjs "https://www.example.com/blog/post"      # images: the provenance metadata inside each file, next to its alt text
+node scripts/links.mjs "https://www.example.com"                 # every linked page: the ones that show unfinished text ([TODO], [FACT-CHECK])
 ```
 
 - **In the code.** Search for literal prices, requirements, plan names and support contacts written in more than one file (check 4.3). Also read the modules that should hold them once.

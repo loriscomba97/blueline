@@ -146,8 +146,8 @@ if (noAlt.length) signals.push(signal('9.5', `${noAlt.length} images have no alt
 if (page.expiringUrls.length) signals.push(signal('9.7', `links that expire: ${page.expiringUrls.slice(0, 5).join(', ')}`));
 const heavyVideos = page.videos.filter((v) => v.preload !== 'none' && v.preload !== 'metadata');
 if (heavyVideos.length) signals.push(signal('9.8', `${heavyVideos.length} videos without preload="none" or "metadata"`));
-const noPoster = page.videos.filter((v) => !v.poster);
-if (noPoster.length) signals.push(signal('9.8', `${noPoster.length} videos without a poster image`));
+const noPoster = page.videos.filter((v) => !v.poster && !v.wrapperStill);
+if (noPoster.length) signals.push(signal('9.8', `${noPoster.length} videos without a poster image, or a still behind them`));
 const eagerEmbeds = page.iframes.filter((f) => /youtube|vimeo/i.test(f.src ?? '') && f.loading !== 'lazy');
 if (eagerEmbeds.length) signals.push(signal('9.8', `${eagerEmbeds.length} video embeds load eagerly`));
 const ogImage = page.og['og:image'];

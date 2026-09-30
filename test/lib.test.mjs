@@ -80,6 +80,13 @@ test('analyzeHtml reads the head, the outline, links, media, scripts and structu
   assert.equal(page.jsonld[1].ok, false);
 });
 
+test('a still behind a video counts as its poster; a sibling image does not', () => {
+  const wrapped = analyzeHtml('<html><body><div class="bg" style="background-image:url(/still.webp)"><video autoplay muted preload="metadata"><source src="/a.mp4"></video></div></body></html>', 'https://example.com/');
+  assert.equal(wrapped.videos[0].wrapperStill, true);
+  const sibling = analyzeHtml('<html><body><div style="background-image:url(/still.webp)"></div><video preload="metadata"></video></body></html>', 'https://example.com/');
+  assert.equal(sibling.videos[0].wrapperStill, false);
+});
+
 test('an empty application root is detected', () => {
   const page = analyzeHtml('<html><head><title>App</title></head><body><div id="root"></div><script src="/main.js"></script></body></html>', 'https://example.com/');
   assert.equal(page.emptyAppRoot, true);

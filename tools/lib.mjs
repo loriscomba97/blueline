@@ -431,10 +431,13 @@ export function analyzeHtml(rawHtml, url) {
       context: contextClasses(t.index),
     }));
   const videos = bodyTags
-    .filter((t) => t.name === 'video')
-    .map((t) => ({
+    .map((t, i) => ({ t, before: bodyTags[i - 1] }))
+    .filter(({ t }) => t.name === 'video')
+    .map(({ t, before }) => ({
       src: t.attrs.src ? safeResolve(t.attrs.src, url) : null,
       poster: t.attrs.poster ?? null,
+      // A still set as the CSS background of the element that wraps the video shows until it plays.
+      wrapperStill: Boolean(before && /background(?:-image)?\s*:[^;]*url\(/i.test(before.attrs.style ?? '') && !body.slice(before.index, t.index).includes('</')),
       preload: t.attrs.preload ?? null,
       autoplay: 'autoplay' in t.attrs,
       muted: 'muted' in t.attrs,

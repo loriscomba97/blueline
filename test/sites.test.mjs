@@ -92,7 +92,8 @@ test('not-found.mjs finds the soft 404', async () => {
 
 test('links.mjs finds the orphan, the broken link, the redirect and the weak anchors', async () => {
   const r = await script('links.mjs', `${broken.origin}/`, '--delay', '0');
-  assertChecks(r, ['7.1', '3.5', '7.3', '7.2'], 'links');
+  assertChecks(r, ['7.1', '3.5', '7.3', '7.2', '5.3'], 'links');
+  assert.ok(r.unfinishedPages.some((p) => p.url === `${broken.origin}/blog/post`), 'unfinished text is found across the crawl');
   assert.deepEqual(r.orphans, [`${broken.origin}/blog/orphan`]);
   assert.deepEqual(r.broken.map((b) => b.target).sort(), [`${broken.origin}/assets/brochure.pdf`, `${broken.origin}/gone`]);
   assert.equal(r.filesChecked, 1);

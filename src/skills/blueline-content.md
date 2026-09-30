@@ -34,7 +34,7 @@ How to write the review: [report.md](references/report.md).
 
 ```bash
 node scripts/page.mjs "https://www.example.com/blog/post"   # title, description, the page's own headings and first paragraphs, links
-node scripts/links.mjs "https://www.example.com"            # inbound links per page, orphans, anchors, where the links pile up
+node scripts/links.mjs "https://www.example.com"            # inbound links per page, orphans, anchors, where the links pile up, unfinished text
 node scripts/assets.mjs "https://www.example.com/blog/post" # images: the AI declaration inside each file, next to its alt text
 ```
 

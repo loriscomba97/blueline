@@ -73,7 +73,7 @@ Search the published HTML and the CMS content for:
 grep -inE '\[(todo|tk|fact-check)|lorem ipsum|\bTBD\b|XX%' page.html
 ```
 
-Report every hit with its location.
+`page.mjs` reports these for one page, and `links.mjs` for every page it crawls. Report every hit with its location.
 
 ### 5.4 Authors are real and findable
 

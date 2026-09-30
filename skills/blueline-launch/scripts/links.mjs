@@ -7,7 +7,8 @@
  *   - inbound links per URL, with links repeated on almost every page (navigation, footer) set apart;
  *   - sitemap URLs that no crawled page links to (orphans);
  *   - links that answer an error, and links that go through a redirect;
- *   - generic, very long and ambiguous anchor texts.
+ *   - generic, very long and ambiguous anchor texts;
+ *   - pages that show unfinished text ([TODO], [FACT-CHECK], lorem ipsum), since every page is downloaded anyway.
  *
  * Usage: node links.mjs <start url> [--limit 100] [--delay 250] [--no-sitemap]
  *   --limit       pages to crawl (default 100, our rule; at most 500)
@@ -48,6 +49,7 @@ const queued = new Set(queue);
 const pages = [];
 const fileLinks = new Set();
 const noindexPages = [];
+const unfinishedPages = [];
 const otherHosts = new Map();
 while (queue.length && pages.length < limit) {
   const url = queue.shift();
@@ -60,6 +62,7 @@ while (queue.length && pages.length < limit) {
   if (chain.length > 1 && new URL(finalUrl).host !== start.host) continue;
   const page = analyzeHtml(final.body, final.url);
   if (isNoindex([...page.robots, final.headers['x-robots-tag'] ?? ''])) noindexPages.push(finalUrl);
+  if (page.placeholders.length) unfinishedPages.push({ url: finalUrl, found: page.placeholders.slice(0, 3) });
   for (const anchor of page.anchors) {
     if (!anchor.internal || !anchor.url || /\bnofollow\b/i.test(anchor.rel)) continue;
     const target = normalizeLink(anchor.url);
@@ -103,6 +106,10 @@ if (summary.orphans.length) {
   const how = uncrawled ? 'candidates, because the crawl stopped early' : 'the crawl reached every linked page';
   signals.push({ check: '7.1', message: `${summary.orphans.length} sitemap URLs have no inbound link from the ${summary.pages} crawled pages (${how}): ${summary.orphans.slice(0, 5).join(', ')}` });
 }
+if (unfinishedPages.length) {
+  const where = unfinishedPages.slice(0, 5).map((p) => `${p.url} (${p.found[0].slice(0, 40)})`).join(', ');
+  signals.push({ check: '5.3', message: `${unfinishedPages.length} crawled pages show unfinished text to readers: ${where}` });
+}
 if (noindexPages.length) {
   signals.push({ check: '10.1', message: `${noindexPages.length} of ${summary.pages} crawled pages carry noindex, so search engines keep them out of the index: ${noindexPages.slice(0, 5).join(', ')} (is each one deliberate?)` });
 }
@@ -128,6 +135,7 @@ print({
   filesChecked: files.length,
   sitemapUrls: sitemapUrls.length,
   noindexPages,
+  unfinishedPages,
   otherHosts: Object.fromEntries(otherHosts),
   ...summary,
   signals,

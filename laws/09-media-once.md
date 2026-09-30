@@ -117,7 +117,7 @@ Report every hit. The fix is a permanent URL: re-host the file on your domain or
 Every `<video>` element has all of these:
 
 - `preload="none"` (or `metadata`);
-- a `poster` image;
+- a `poster` image, or a still set as the CSS background of the element that wraps it, which also shows when the video is hidden for reduced motion;
 - a declared aspect ratio.
 
 Autoplay is muted, plays only while the video is on screen, and is off when the visitor prefers reduced motion.
