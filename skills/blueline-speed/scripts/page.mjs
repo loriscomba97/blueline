@@ -11,7 +11,7 @@
  *
  * A signal is a lead, not a verdict: confirm it before reporting a finding.
  */
-import { analyzeHtml, aspectRatioClasses, fail, follow, GENERIC_ANCHORS, parseArgs, print, request, sameExceptSlash, toHttpUrl, USER_AGENT } from './lib.mjs';
+import { analyzeHtml, cssSizedClasses, fail, follow, GENERIC_ANCHORS, isNoindex, parseArgs, print, request, sameExceptSlash, sameUrl, structuredDataMismatches, toHttpUrl, USER_AGENT } from './lib.mjs';
 
 const { positional, values } = parseArgs(process.argv.slice(2), { flags: ['full', 'help'], options: ['user-agent'] });
 if (values.help || positional.length !== 1) fail('usage: node page.mjs <url> [--user-agent "..."] [--full]');
@@ -33,13 +33,25 @@ const result = {
 };
 
 const contentType = final.headers?.['content-type'] ?? '';
-if (!final.status || final.status >= 400 || !/html/i.test(contentType)) {
+if (!final.status || !/html/i.test(contentType)) {
   result.signals = final.error ? [signal('1.6', `the page could not be fetched: ${final.error}`)] : [];
   print(result);
   process.exit(0);
 }
 
 const page = analyzeHtml(final.body, final.url);
+
+// An error page (a 404, say) is read for check 3.2 only: does it help the visitor who landed on it?
+if (final.status >= 400) {
+  const signals = [];
+  const internal = page.anchors.filter((a) => a.internal && a.url);
+  for (const marker of page.clientRendering) signals.push(signal('3.2', `${marker}: without JavaScript the error page shows nothing`));
+  if (internal.length < 3) signals.push(signal('3.2', `the error page offers ${internal.length} internal links (our rule: five or six to the main sections)`));
+  result.page = { title: page.titles[0] ?? '', headings: page.headings, internalLinks: internal.length, wordCount: page.wordCount };
+  result.signals = signals;
+  print(result);
+  process.exit(0);
+}
 const pageOrigin = new URL(final.url).origin;
 const signals = [];
 
@@ -63,14 +75,18 @@ if (temporary.length) signals.push(signal('2.1', `temporary redirects in the cha
 if (page.canonicals.length === 1) {
   const href = page.canonicals[0];
   if (!/^https?:\/\//i.test(href)) signals.push(signal('2.2', `the canonical is relative: ${href}`));
-  else if (href !== final.url) {
+  else if (!sameUrl(href, final.url)) {
     const how = sameExceptSlash(href, final.url) ? 'differs only by a trailing slash' : new URL(href).host !== new URL(final.url).host ? 'points at another host' : 'points at another URL';
     signals.push(signal('2.2', `the canonical ${how}: ${href} (page: ${final.url})`));
   }
 }
-if (page.og['og:url'] && page.canonicals[0] && page.og['og:url'] !== page.canonicals[0]) {
+if (page.og['og:url'] && page.canonicals[0] && !sameUrl(page.og['og:url'], page.canonicals[0])) {
   signals.push(signal('2.3', `og:url ${page.og['og:url']} differs from the canonical ${page.canonicals[0]}`));
 }
+
+// Law 4: structured data says what the page says
+const mismatches = structuredDataMismatches(page);
+for (const m of mismatches.slice(0, 10)) signals.push(signal('4.1', `${m.type} ${m.field} not found in the visible text: "${m.value}"`));
 
 // Law 5: nothing unfinished
 if (page.placeholders.length) signals.push(signal('5.3', `placeholder text in the page: ${page.placeholders.join(', ')}`));
@@ -92,8 +108,8 @@ if (skips.length) signals.push(signal('6.5', `heading levels skipped: ${skips.sl
 // Law 7: anchors
 const generic = page.anchors.filter((a) => a.internal && GENERIC_ANCHORS.has(a.text.toLowerCase()));
 if (generic.length) signals.push(signal('7.2', `${generic.length} internal links with generic anchor text: ${[...new Set(generic.map((a) => `"${a.text}"`))].join(', ')}`));
-const long = page.anchors.filter((a) => a.internal && a.text.split(/\s+/).length > 12);
-if (long.length) signals.push(signal('7.2', `${long.length} internal links have anchors longer than 12 words, often a link wrapped around a whole card: "${long[0].text.slice(0, 70)}..."`));
+const long = page.anchors.filter((a) => a.internal && a.inText && !a.block && a.text.split(/\s+/).length > 12);
+if (long.length) signals.push(signal('7.2', `${long.length} links inside the text have anchors longer than 12 words (our rule: two to eight): "${long[0].text.slice(0, 70)}..."`));
 
 // Law 8: the page first
 const blocking = page.scripts.filter((s) => s.inHead && s.src && s.origin !== pageOrigin && !s.async && !s.defer && !s.module);
@@ -111,12 +127,12 @@ if (final.ttfbMs > 1000) signals.push(signal('8.9', `first byte after ${final.tt
 // Law 9: media
 const noDimensions = page.images.filter((i) => !i.width || !i.height);
 if (noDimensions.length) {
-  const sizedClasses = await cssAspectRatioClasses(page, pageOrigin);
+  const sizedClasses = await cssSizes(page, pageOrigin);
   const unsized = noDimensions.filter((i) => !/aspect-ratio/i.test(i.style) && ![...i.class.split(/\s+/), ...i.context].some((c) => sizedClasses.has(c)));
   if (unsized.length) {
-    signals.push(signal('9.3', `${unsized.length} of ${page.images.length} images have no width and height, and no aspect-ratio rule was found for their classes: ${unsized.slice(0, 3).map((i) => i.src).join(', ')}`));
+    signals.push(signal('9.3', `${unsized.length} of ${page.images.length} images have no width and height, and no CSS rule reserving their space was found for their classes: ${unsized.slice(0, 3).map((i) => i.src).join(', ')}`));
   }
-  result.cssAspectRatioClasses = [...sizedClasses].slice(0, 20);
+  result.cssSizedClasses = [...sizedClasses].slice(0, 30);
 }
 const iframesNoSize = page.iframes.filter((f) => !f.width || !f.height);
 if (iframesNoSize.length) signals.push(signal('9.3', `${iframesNoSize.length} iframes have no width and height attributes`));
@@ -134,7 +150,7 @@ if (!ogImage) signals.push(signal('9.9', 'no og:image'));
 else if (!/^https?:\/\//i.test(ogImage)) signals.push(signal('9.9', `og:image is not an absolute URL: ${ogImage}`));
 
 // Law 10: indexing
-const noindex = [...page.robots, final.headers['x-robots-tag'] ?? ''].some((v) => /noindex/i.test(v));
+const noindex = isNoindex([...page.robots, final.headers['x-robots-tag'] ?? '']);
 if (noindex) signals.push(signal('10.1', 'this URL carries noindex: right for staging, a blocker on a production page meant for search'));
 if (page.metaRefresh) signals.push(signal('2.1', `meta refresh: ${page.metaRefresh}`));
 
@@ -150,6 +166,8 @@ result.page = {
   twitter: page.twitter,
   hreflang: page.hreflang,
   wordCount: page.wordCount,
+  main: page.main,
+  tracking: page.tracking,
   headings: cap(page.headings),
   links: {
     internal: page.anchors.filter((a) => a.internal).length,
@@ -172,12 +190,12 @@ result.page = {
 result.signals = signals;
 print(result);
 
-/** Classes that get an aspect-ratio from the page's inline CSS or from up to three of its own stylesheets. */
-async function cssAspectRatioClasses(page, origin) {
-  const classes = aspectRatioClasses(page.inlineCss);
-  for (const sheet of page.stylesheets.filter((s) => s.origin === origin).slice(0, 3)) {
+/** Classes whose CSS reserves space (aspect-ratio or a fixed height), from inline CSS and up to five of the page's own stylesheets. */
+async function cssSizes(page, origin) {
+  const classes = cssSizedClasses(page.inlineCss);
+  for (const sheet of page.stylesheets.filter((s) => s.origin === origin).slice(0, 5)) {
     const res = await request(sheet.href);
-    if (res.status === 200) for (const c of aspectRatioClasses(res.body)) classes.add(c);
+    if (res.status === 200) for (const c of cssSizedClasses(res.body)) classes.add(c);
   }
   return classes;
 }

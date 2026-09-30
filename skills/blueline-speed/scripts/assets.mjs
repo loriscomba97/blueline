@@ -58,10 +58,7 @@ const weight = {
   note: 'uncompressed bytes of the files the HTML asks for; transfer sizes are smaller when the server compresses, and JavaScript loaded later is not counted',
 };
 const kb = (n) => `${Math.round(n / 1024)} KB`;
-signals.push({
-  check: '8.3',
-  message: `the HTML asks for ${scripts.length} scripts, ${kb(weight.javascript.firstPartyBytes)} uncompressed from the site and ${kb(weight.javascript.thirdPartyBytes)} from other origins, plus ${kb(inlineScriptBytes)} inline`,
-});
+weight.summary = `the HTML asks for ${scripts.length} scripts, ${kb(weight.javascript.firstPartyBytes)} uncompressed from the site and ${kb(weight.javascript.thirdPartyBytes)} from other origins, plus ${kb(inlineScriptBytes)} inline (check 8.3)`;
 const thirdParty = [...new Set(scripts.filter((s) => !s.firstParty).map((s) => new URL(s.url).host))];
 if (thirdParty.length) signals.push({ check: '8.2', message: `scripts from ${thirdParty.length} other origins: ${thirdParty.join(', ')}` });
 

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>{{origin}}/</loc><lastmod>2026-01-01T00:00:00Z</lastmod></url>
+  <url><loc>{{origin}}/pricing</loc><lastmod>2026-01-01T00:00:00Z</lastmod></url>
+  <url><loc>{{origin}}/blog/post</loc><lastmod>2026-01-01T00:00:00Z</lastmod></url>
+  <url><loc>{{origin}}/blog/orphan</loc><lastmod>2026-01-01T00:00:00Z</lastmod></url>
+  <url><loc>{{origin}}/old</loc><lastmod>2026-01-01T00:00:00Z</lastmod></url>
+  <url><loc>{{origin}}/gone</loc><lastmod>2026-01-01T00:00:00Z</lastmod></url>
+</urlset>

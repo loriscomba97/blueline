@@ -10,7 +10,7 @@
  * One more request adds a tracking parameter (?utm_source=blueline), which must not create a page
  * of its own (check 2.5).
  */
-import { analyzeHtml, fail, follow, parseArgs, print, toHttpUrl } from './lib.mjs';
+import { analyzeHtml, fail, follow, isLocalHost, parseArgs, print, sameUrl, toHttpUrl } from './lib.mjs';
 
 const { positional, values } = parseArgs(process.argv.slice(2), { flags: ['help'] });
 if (values.help || positional.length !== 1) fail('usage: node variants.mjs <url>');
@@ -37,14 +37,18 @@ if (target.pathname !== '/') {
   if (cased !== target.pathname) paths.add(cased);
 }
 
+// A local development server usually answers on one scheme only, so only that one is tested.
+const schemes = isLocalHost(host) ? [target.protocol] : ['http:', 'https:'];
 const variants = [];
-for (const scheme of ['http:', 'https:']) {
+for (const scheme of schemes) {
   for (const h of hosts) for (const p of paths) variants.push(`${scheme}//${h}${p}${target.search}`);
 }
 
 const rows = [];
 const signals = [];
 const silentHosts = new Map();
+const chains = [];
+const temporaries = [];
 if (!canonical) signals.push({ check: '2.2', message: `the page declares no single absolute canonical, so the target is simply the URL it loads: ${target.href}` });
 for (const variant of variants) {
   const { chain, final } = await follow(variant);
@@ -53,6 +57,7 @@ for (const variant of variants) {
   const row = {
     variant,
     statuses: chain.map((c) => c.status),
+    hops: chain.map((c) => `${c.status || 'no answer'} ${c.url}`),
     final: final.url,
     finalStatus: final.status,
     hops,
@@ -67,7 +72,7 @@ for (const variant of variants) {
   }
   if (final.status === 200 && final.url !== target.href) {
     const other = /html/i.test(final.headers['content-type'] ?? '') ? analyzeHtml(final.body, final.url).canonicals : [];
-    const pointsAtTarget = other.length === 1 && other[0] === target.href;
+    const pointsAtTarget = other.length === 1 && sameUrl(other[0], target.href);
     signals.push({
       check: '2.1',
       message: pointsAtTarget
@@ -75,10 +80,12 @@ for (const variant of variants) {
         : `${variant} answers 200 at ${final.url} without a canonical to the target: a duplicate`,
     });
   }
-  if (endsAtTarget && hops > 1) signals.push({ check: '2.1', message: `${variant} needs ${hops} redirects to reach the target` });
+  if (endsAtTarget && hops > 1) chains.push(`${variant} (${hops} hops)`);
   const temporary = chain.filter((c) => c.status === 302 || c.status === 307);
-  if (temporary.length) signals.push({ check: '2.1', message: `${variant} uses a temporary redirect (${temporary.map((c) => c.status).join(', ')})` });
+  if (temporary.length) temporaries.push(`${variant} (${temporary.map((c) => `${c.status} at ${c.url}`).join(', ')})`);
 }
+if (chains.length) signals.push({ check: '2.1', message: `${chains.length} variants need more than one redirect to reach the target: ${chains.slice(0, 4).join('; ')}` });
+if (temporaries.length) signals.push({ check: '2.1', message: `${temporaries.length} variants go through a temporary redirect: ${temporaries.slice(0, 4).join('; ')}` });
 for (const [silent, error] of silentHosts) {
   signals.push({ check: '2.1', message: `${silent} does not answer (${error}): no duplicate, but visitors who type it reach nothing` });
 }
@@ -96,13 +103,15 @@ const paramRow = {
   canonical: paramCanonicals.length === 1 ? paramCanonicals[0] : null,
 };
 rows.push(paramRow);
-if (withParam.final.status === 200 && withParam.final.url !== target.href && paramRow.canonical !== target.href) {
+if (withParam.final.status === 200 && !sameUrl(withParam.final.url, target.href) && !(paramRow.canonical && sameUrl(paramRow.canonical, target.href))) {
   signals.push({ check: '2.5', message: `${tracked.href} answers 200 ${paramRow.canonical ? `with the canonical ${paramRow.canonical}` : 'with no canonical'}: tracking parameters create duplicate pages` });
 }
 
 print({
   target: target.href,
   targetFrom: canonical ? 'canonical' : 'final URL',
+  schemes,
+  ...(target.pathname === '/' ? { note: 'the home page has no trailing-slash or case variants: run this again on an inner page' } : {}),
   rows,
   signals,
 });

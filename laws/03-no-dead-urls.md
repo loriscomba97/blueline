@@ -38,6 +38,8 @@ The not-found page:
 
 It keeps the `404` status.
 
+`node scripts/page.mjs https://www.example.com/a-made-up-url` reads the not-found page and counts the links it offers. It also reports a page that shows nothing without JavaScript, such as a framework's error shell.
+
 ### 3.3 The sitemap lists only live pages
 
 **Where:** live URL · **Default severity:** blocker when many entries fail, fix soon otherwise

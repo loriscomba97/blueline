@@ -33,9 +33,12 @@ How to write the review: [report.md](references/report.md).
 ## Collect evidence
 
 ```bash
-node scripts/page.mjs https://www.example.com/blog/post   # title, description, headings, first paragraphs, links, anchors
-node scripts/links.mjs https://www.example.com            # inbound links per page, orphans, anchors, where the links pile up
+node scripts/page.mjs "https://www.example.com/blog/post"   # title, description, the page's own headings and first paragraphs, links
+node scripts/links.mjs "https://www.example.com"            # inbound links per page, orphans, anchors, where the links pile up
+node scripts/assets.mjs "https://www.example.com/blog/post" # images: the AI declaration inside each file, next to its alt text
 ```
+
+`page.mjs` separates the page's own content (`main`: the first `<article>`, else `<main>`) from the navigation, related cards and footer. Judge word counts, headings and the first paragraphs on `main`.
 
 For a draft, work from the text. Also run `links.mjs` on the live site, so the links the draft proposes can be checked against pages that exist (check 7.6).
 
@@ -43,9 +46,10 @@ For a draft, work from the text. Also run `links.mjs` on the live site, so the l
 
 ## Review
 
-1. For each law, read its reference and run its checks against your evidence. In a draft, start with the claims (law 5), then the intent and the structure (law 6), then the links (law 7).
-2. File every finding under the check written for it, with its severity, evidence, reason, fix and verification.
-3. When you propose new titles, headings or links, write them out in full, ready to paste, and mark them as proposals.
-4. Write the report as [report.md](references/report.md) describes. The verdict table lists laws 5 to 7.
+1. **First, can the page be indexed?** `page.mjs` reports a `noindex` (check 10.1), and `curl -s https://www.example.com/robots.txt` shows whether crawlers are blocked (check 10.2). If the page cannot be indexed, nothing else in this review matters yet: report it under "Before anything else", as [report.md](references/report.md) describes, then continue.
+2. For each law, read its reference and run its checks against your evidence. In a draft, start with the claims (law 5), then the intent and the structure (law 6), then the links (law 7).
+3. File every finding under the check written for it, with its severity, evidence, reason, fix and verification.
+4. When you propose new titles, headings or links, write them out in full, ready to paste, and mark them as proposals.
+5. Write the report as [report.md](references/report.md) describes. The verdict table lists laws 5 to 7.
 
 <!-- include: shared/rules.md -->

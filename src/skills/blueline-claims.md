@@ -37,8 +37,8 @@ How to write the review: [report.md](references/report.md).
 ## Collect evidence
 
 ```bash
-node scripts/page.mjs https://www.example.com/pricing --full   # visible text, headings, bylines, and the structured data values to compare
-node scripts/assets.mjs https://www.example.com/blog/post      # images: the provenance metadata inside each file, next to its alt text
+node scripts/page.mjs "https://www.example.com/pricing" --full   # structured data values, and the FAQ answers, prices, headlines and authors the visible text lacks
+node scripts/assets.mjs "https://www.example.com/blog/post"      # images: the provenance metadata inside each file, next to its alt text
 ```
 
 - **In the code.** Search for literal prices, requirements, plan names and support contacts written in more than one file (check 4.3). Also read the modules that should hold them once.
@@ -48,8 +48,9 @@ node scripts/assets.mjs https://www.example.com/blog/post      # images: the pro
 
 ## Review
 
-1. For each law, read its reference and run its checks against your evidence.
-2. File every finding under the check written for it, with its severity, evidence, reason, fix and verification.
-3. Write the report as [report.md](references/report.md) describes. The verdict table lists laws 4 and 5, and "Open decisions" lists what only the owner can confirm.
+1. **First, can the page be indexed?** `page.mjs` reports a `noindex` (check 10.1), and `curl -s https://www.example.com/robots.txt` shows whether crawlers are blocked (check 10.2). If the page cannot be indexed, nothing else in this review matters yet: report it under "Before anything else", as [report.md](references/report.md) describes, then continue.
+2. For each law, read its reference and run its checks against your evidence.
+3. File every finding under the check written for it, with its severity, evidence, reason, fix and verification.
+4. Write the report as [report.md](references/report.md) describes. The verdict table lists laws 4 and 5, and "Open decisions" lists what only the owner can confirm.
 
 <!-- include: shared/rules.md -->

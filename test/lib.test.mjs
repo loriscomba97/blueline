@@ -4,8 +4,9 @@ import { test } from 'node:test';
 import { gzipSync } from 'node:zlib';
 import {
   analyzeHtml,
-  aspectRatioClasses,
+  cssSizedClasses,
   imageInfo,
+  isNoindex,
   summarizeLinks,
   decodeEntities,
   isAllowed,
@@ -91,7 +92,27 @@ test('images carry their wrapper classes, and CSS aspect-ratio rules are found',
   const page = analyzeHtml(html, 'https://example.com/');
   assert.deepEqual(page.images[0].context, ['card', 'card-cover']);
   assert.equal(page.clientRendering.length, 1);
-  assert.deepEqual([...aspectRatioClasses(page.inlineCss)].sort(), ['card-cover', 'hero']);
+  assert.deepEqual([...cssSizedClasses(page.inlineCss)].sort(), ['card-cover', 'hero']);
+  assert.deepEqual([...cssSizedClasses('.cov{position:relative;min-height:340px} .ic img{width:22px;height:22px} .wide{height:100%}')].sort(), ['cov', 'ic']);
+});
+
+test('the content of the page is read apart from navigation and footer', () => {
+  const html = `<html><body><nav><a href="/">Home</a> <a href="/pricing">Pricing and plans for teams</a></nav>
+<main><article><h1>How to plan a week</h1><p>Plan the week on Monday morning with the whole team.</p><h2>Owners</h2><p>Give every task one owner, and only one.</p></article>
+<aside><h2>Keep reading</h2><p>Three more guides about planning for small teams.</p></aside></main><footer><p>Example, all rights reserved, every year.</p></footer></body></html>`;
+  const page = analyzeHtml(html, 'https://example.com/guide');
+  assert.equal(page.main.from, 'article');
+  assert.deepEqual(page.main.headings.map((h) => h.text), ['How to plan a week', 'Owners']);
+  assert.equal(page.main.paragraphs.length, 2);
+  assert.ok(page.main.wordCount < page.wordCount);
+});
+
+test('noindex in all its spellings', () => {
+  assert.equal(isNoindex(['index, follow']), false);
+  assert.equal(isNoindex(['noindex, nofollow']), true);
+  assert.equal(isNoindex(['none']), true);
+  assert.equal(isNoindex(['googlebot: none']), true);
+  assert.equal(isNoindex(['max-snippet:-1, max-image-preview:large']), false);
 });
 
 test('attributes and entities', () => {
@@ -192,6 +213,10 @@ test('image formats, intrinsic sizes and provenance metadata are read from the b
 
   const tagged = Buffer.concat([png, Buffer.from('<x:xmpmeta><rdf:Description Iptc4xmpExt:DigitalSourceType="http://cv.iptc.org/newscodes/digitalsourcetype/trainedAlgorithmicMedia"/></x:xmpmeta>')]);
   assert.equal(imageInfo(tagged).digitalSourceType, 'trainedAlgorithmicMedia');
+  const element = Buffer.concat([png, Buffer.from('<Iptc4xmpExt:DigitalSourceType>trainedAlgorithmicMedia</Iptc4xmpExt:DigitalSourceType>')]);
+  assert.equal(imageInfo(element).digitalSourceType, 'trainedAlgorithmicMedia');
+  const resource = Buffer.concat([png, Buffer.from('<Iptc4xmpExt:DigitalSourceType rdf:resource="http://cv.iptc.org/newscodes/digitalsourcetype/compositeWithTrainedAlgorithmicMedia"/>')]);
+  assert.equal(imageInfo(resource).digitalSourceType, 'compositeWithTrainedAlgorithmicMedia');
   assert.equal(imageInfo(png).digitalSourceType, null);
 });
 
@@ -203,7 +228,7 @@ test('the link summary sets template links apart and finds orphans, broken links
     ...filler,
     { url: `${site}/`, status: 200, final: `${site}/`, links: [...nav, { url: `${site}/blog/a`, text: 'How we price projects' }] },
     { url: `${site}/pricing`, status: 200, final: `${site}/pricing`, links: nav },
-    { url: `${site}/blog/a`, status: 200, final: `${site}/blog/a`, links: [...nav, { url: `${site}/blog/b#top`, text: 'Pricing a website' }, { url: `${site}/old`, text: 'read more' }] },
+    { url: `${site}/blog/a`, status: 200, final: `${site}/blog/a`, links: [...nav, { url: `${site}/blog/b#top`, text: 'Pricing a website' }, { url: `${site}/old`, text: 'read more' }, { url: `${site}/blog/c`, text: 'a very long anchor that goes on and on for many more words than anyone needs', inText: true }] },
     { url: `${site}/blog/b`, status: 200, final: `${site}/blog/b`, links: [...nav, { url: `${site}/gone`, text: 'The old checklist' }] },
     { url: `${site}/blog/c`, status: 200, final: `${site}/blog/c`, links: nav },
     { url: `${site}/old`, status: 200, final: `${site}/blog/c`, links: [] },
@@ -211,9 +236,17 @@ test('the link summary sets template links apart and finds orphans, broken links
   ];
   const summary = summarizeLinks(pages, { sitemapUrls: [`${site}/blog/a`, `${site}/blog/c`, `${site}/blog/d`] });
   assert.deepEqual(summary.templateLinks.sort(), [`${site}/`, `${site}/pricing`]);
-  assert.deepEqual(summary.orphans, [`${site}/blog/c`, `${site}/blog/d`]);
+  assert.deepEqual(summary.orphans, [`${site}/blog/d`]);
   assert.deepEqual(summary.broken.map((b) => b.target), [`${site}/gone`]);
   assert.deepEqual(summary.redirected.map((r) => [r.target, r.final]), [[`${site}/old`, `${site}/blog/c`]]);
   assert.equal(summary.genericAnchors.length, 1);
+  assert.equal(summary.longAnchors.length, 1);
   assert.equal(summary.inbound[`${site}/blog/b`], 1);
+
+  const withFiles = summarizeLinks(
+    [{ url: `${site}/`, status: 200, final: `${site}/`, links: [{ url: `${site}/feed.xml`, text: 'RSS' }, { url: `${site}/blog/a`, text: 'Planning' }] }],
+    { files: [{ url: `${site}/feed.xml`, status: 404, final: `${site}/feed.xml` }] },
+  );
+  assert.deepEqual(withFiles.topContentTargets.map((t) => t.url), [`${site}/blog/a`]);
+  assert.deepEqual(withFiles.broken.map((b) => b.target), [`${site}/feed.xml`]);
 });

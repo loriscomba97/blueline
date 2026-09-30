@@ -9,7 +9,7 @@
  *   --limit   URLs to request, spread across the sitemap (default 100, our rule)
  *   --delay   milliseconds between requests (default 250), to stay polite
  */
-import { analyzeHtml, fail, follow, parseArgs, parseRobots, parseSitemap, print, sleep, spread, toHttpUrl } from './lib.mjs';
+import { analyzeHtml, fail, follow, isNoindex, parseArgs, parseRobots, parseSitemap, print, sameUrl, sleep, spread, toHttpUrl } from './lib.mjs';
 
 const { positional, values } = parseArgs(process.argv.slice(2), { flags: ['help'], options: ['limit', 'delay'] });
 if (values.help || positional.length !== 1) fail('usage: node sitemap.mjs <site or sitemap URL> [--limit 100] [--delay 250]');
@@ -60,7 +60,7 @@ const counts = new Map();
 for (const value of lastmods) counts.set(value, (counts.get(value) ?? 0) + 1);
 const [commonLastmod, commonCount] = [...counts].sort((a, b) => b[1] - a[1])[0] ?? [null, 0];
 if (lastmods.length >= 3 && commonCount / lastmods.length >= 0.8) {
-  signals.push({ check: '3.3', message: `${commonCount} of ${lastmods.length} dated entries share the lastmod ${commonLastmod}: probably the build time, not each page's change date` });
+  signals.push({ check: '3.3', message: `${commonCount} of ${lastmods.length} dated entries share the lastmod ${commonLastmod}: usually a build or batch date rather than each page's own change date` });
 }
 const hosts = new Set(entries.map((e) => safeHost(e.loc)));
 if (hosts.size > 1) signals.push({ check: '2.3', message: `the sitemap lists URLs on ${hosts.size} hosts: ${[...hosts].join(', ')}` });
@@ -73,11 +73,11 @@ for (const [i, entry] of sample.entries()) {
   const html = /html/i.test(final.headers?.['content-type'] ?? '');
   const page = html ? analyzeHtml(final.body, final.url) : null;
   const canonical = page?.canonicals.length === 1 ? page.canonicals[0] : null;
-  const noindex = [...(page?.robots ?? []), final.headers?.['x-robots-tag'] ?? ''].some((v) => /noindex/i.test(v));
+  const noindex = isNoindex([...(page?.robots ?? []), final.headers?.['x-robots-tag'] ?? '']);
   const problems = [];
   if (chain.length > 1) problems.push(`redirects to ${final.url}`);
   if (final.status !== 200) problems.push(`answers ${final.status || final.error}`);
-  if (page && canonical !== entry.loc) problems.push(canonical ? `canonical is ${canonical}` : 'no single canonical');
+  if (page && !(canonical && sameUrl(canonical, entry.loc))) problems.push(canonical ? `canonical is ${canonical}` : 'no single canonical');
   if (noindex) problems.push('noindex');
   rows.push({ url: entry.loc, lastmod: entry.lastmod, status: chain.map((c) => c.status), ...(problems.length ? { problems } : {}) });
 }

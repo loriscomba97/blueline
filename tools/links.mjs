@@ -20,11 +20,15 @@ import {
   analyzeHtml,
   fail,
   follow,
+  isAllowed,
+  isFileUrl,
+  isNoindex,
   normalizeLink,
   parseArgs,
   parseRobots,
   parseSitemap,
   print,
+  rulesFor,
   sleep,
   summarizeLinks,
   toHttpUrl,
@@ -37,11 +41,12 @@ const delay = Number(values.delay ?? 250);
 if (!Number.isInteger(limit) || limit < 1 || !Number.isFinite(delay) || delay < 0) fail('--limit must be a positive integer and --delay a number of milliseconds');
 
 const start = toHttpUrl(positional[0]);
-const FILE = /\.(?:pdf|zip|gz|dmg|pkg|exe|jpe?g|png|gif|webp|avif|svg|ico|mp4|webm|mov|mp3|wav|css|js|json|xml|txt|woff2?)$/i;
 
 const queue = [normalizeLink(start.href)];
 const queued = new Set(queue);
 const pages = [];
+const fileLinks = new Set();
+let noindexPages = 0;
 const otherHosts = new Map();
 while (queue.length && pages.length < limit) {
   const url = queue.shift();
@@ -53,36 +58,54 @@ while (queue.length && pages.length < limit) {
   if (final.status !== 200 || !/html/i.test(final.headers?.['content-type'] ?? '')) continue;
   if (chain.length > 1 && new URL(finalUrl).host !== start.host) continue;
   const page = analyzeHtml(final.body, final.url);
+  if (isNoindex([...page.robots, final.headers['x-robots-tag'] ?? ''])) noindexPages++;
   for (const anchor of page.anchors) {
     if (!anchor.internal || !anchor.url || /\bnofollow\b/i.test(anchor.rel)) continue;
     const target = normalizeLink(anchor.url);
     if (!target) continue;
-    record.links.push({ url: target, text: anchor.text });
+    record.links.push({ url: target, text: anchor.text, block: anchor.block, inText: anchor.inText });
     const host = new URL(target).host;
     if (host !== start.host) {
       otherHosts.set(host, (otherHosts.get(host) ?? 0) + 1);
       continue;
     }
-    if (!queued.has(target) && !FILE.test(new URL(target).pathname)) {
+    if (isFileUrl(target)) fileLinks.add(target);
+    else if (!queued.has(target)) {
       queued.add(target);
       queue.push(target);
     }
   }
 }
 
-const sitemapUrls = values['no-sitemap'] ? [] : await readSitemap(start);
-const summary = summarizeLinks(pages, { sitemapUrls });
+// Linked files (feeds, sitemaps, PDFs, images) are not crawled, but their status is checked: at most 30.
+const files = [];
+for (const url of [...fileLinks].slice(0, 30)) {
+  await sleep(delay);
+  let { final } = await follow(url, { method: 'HEAD' });
+  if (final.status === 405 || final.status === 501) ({ final } = await follow(url));
+  files.push({ url, status: final.status, final: normalizeLink(final.url) ?? final.url, links: [] });
+}
+
+const robots = await follow(new URL('/robots.txt', start.origin));
+const robotsRules = robots.final.status === 200 ? parseRobots(robots.final.body) : null;
+const sitemapUrls = values['no-sitemap'] ? [] : await readSitemap(start, robotsRules);
+const summary = summarizeLinks(pages, { sitemapUrls, files });
 const crawled = new Set(pages.map((p) => p.url));
 const uncrawled = [...queued].filter((u) => !crawled.has(u)).length;
 
 const signals = [];
 if (uncrawled) signals.push({ check: '7.1', message: `the crawl stopped at ${pages.length} pages with ${uncrawled} more queued: inbound counts are a lower bound (raise --limit)` });
-if (summary.orphans.length) signals.push({ check: '7.1', message: `${summary.orphans.length} sitemap URLs have no inbound link from the ${summary.pages} crawled pages: ${summary.orphans.slice(0, 5).join(', ')}` });
+if (summary.orphans.length) {
+  const how = uncrawled ? 'candidates, because the crawl stopped early' : 'the crawl reached every linked page';
+  signals.push({ check: '7.1', message: `${summary.orphans.length} sitemap URLs have no inbound link from the ${summary.pages} crawled pages (${how}): ${summary.orphans.slice(0, 5).join(', ')}` });
+}
+if (noindexPages) signals.push({ check: '10.1', message: `${noindexPages} of ${summary.pages} crawled pages carry noindex: links to them count for nothing in search` });
+if (robotsRules && !isAllowed(rulesFor(robotsRules, '*').rules, '/')) signals.push({ check: '10.2', message: 'robots.txt disallows "/" for every crawler without its own group: search engines cannot follow any of these links' });
 if (summary.broken.length) signals.push({ check: '3.5', message: `${summary.broken.length} internal links answer an error: ${summary.broken.slice(0, 5).map((b) => `${b.target} (${b.status || 'no answer'})`).join(', ')}` });
 if (summary.redirected.length) signals.push({ check: '7.3', message: `${summary.redirected.length} internal links go through a redirect: ${summary.redirected.slice(0, 5).map((r) => `${r.target} -> ${r.final}`).join(', ')}` });
 if (otherHosts.size) signals.push({ check: '2.3', message: `internal links point at other host variants: ${[...otherHosts].map(([h, n]) => `${h} (${n})`).join(', ')}` });
 if (summary.genericAnchors.length) signals.push({ check: '7.2', message: `${summary.genericAnchors.length} internal links use generic anchor text such as "${summary.genericAnchors[0].text}"` });
-if (summary.longAnchors.length) signals.push({ check: '7.2', message: `${summary.longAnchors.length} internal links have anchors longer than 12 words, often links wrapped around a whole card` });
+if (summary.longAnchors.length) signals.push({ check: '7.2', message: `${summary.longAnchors.length} links inside the text have anchors longer than 12 words (our rule: two to eight)` });
 if (summary.ambiguousAnchors.length) signals.push({ check: '7.2', message: `${summary.ambiguousAnchors.length} anchor texts point at different targets, for example "${summary.ambiguousAnchors[0].text}"` });
 const top3 = summary.topContentTargets.slice(0, 3).reduce((sum, t) => sum + t.share, 0);
 if (summary.contentLinks >= 20 && top3 >= 40) {
@@ -93,14 +116,14 @@ print({
   start: start.href,
   crawled: pages.length,
   queuedButNotCrawled: uncrawled,
+  filesChecked: files.length,
   sitemapUrls: sitemapUrls.length,
   ...summary,
   signals,
 });
 
-async function readSitemap(site) {
-  const robots = await follow(new URL('/robots.txt', site.origin));
-  const listed = robots.final.status === 200 ? parseRobots(robots.final.body).sitemaps.filter((s) => /^https?:\/\//i.test(s)) : [];
+async function readSitemap(site, robotsRules) {
+  const listed = robotsRules ? robotsRules.sitemaps.filter((s) => /^https?:\/\//i.test(s)) : [];
   const urls = [];
   const queueSitemaps = listed.length ? listed : [new URL('/sitemap.xml', site.origin).href];
   let read = 0;
@@ -113,7 +136,7 @@ async function readSitemap(site) {
       if (kind === 'index') queueSitemaps.push(...entries.map((e) => e.loc));
       else urls.push(...entries.map((e) => normalizeLink(e.loc)).filter(Boolean));
     } catch {
-      // An unreadable sitemap is reported by sitemap.mjs.
+      // An unreadable sitemap is a finding for check 3.3, not for this crawl.
     }
   }
   return [...new Set(urls)];

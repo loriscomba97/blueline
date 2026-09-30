@@ -52,7 +52,7 @@ Keep PNG or SVG for flat graphics, screenshots with text, and images that need s
 
 **Where:** live URL · **Default severity:** fix soon
 
-Every `<img>`, `<video>` and `<iframe>` has `width` and `height` attributes, or a CSS `aspect-ratio` on its container.
+Every `<img>`, `<video>` and `<iframe>` has `width` and `height` attributes, or its space is reserved by CSS: an `aspect-ratio`, or a fixed height on its container. `page.mjs` reads the site's stylesheets for both before it reports an image.
 
 ```bash
 grep -oiE '<img[^>]*>' page.html | grep -viE 'width=' | head

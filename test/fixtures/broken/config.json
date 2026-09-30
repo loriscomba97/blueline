@@ -1,0 +1,47 @@
+{
+  "unknown": "soft404",
+  "trailingSlash": "duplicate",
+  "caseInsensitive": true,
+  "redirects": {
+    "/old": [
+      302,
+      "/old-2"
+    ],
+    "/old-2": [
+      301,
+      "/pricing"
+    ]
+  },
+  "status": {
+    "/gone": 404,
+    "/assets/missing.png": 404,
+    "/assets/brochure.pdf": 404
+  },
+  "headers": {
+    "/assets/*": {
+      "cache-control": "max-age=60"
+    }
+  },
+  "generated": {
+    "/assets/hero.png": {
+      "width": 3000,
+      "height": 2000,
+      "bytes": 270000
+    },
+    "/assets/tile.png": {
+      "width": 400,
+      "height": 300,
+      "bytes": 2000
+    },
+    "/assets/cover-ai.png": {
+      "width": 800,
+      "height": 450,
+      "bytes": 3000
+    },
+    "/assets/cover-signed.png": {
+      "width": 10,
+      "height": 10,
+      "bytes": 100
+    }
+  }
+}

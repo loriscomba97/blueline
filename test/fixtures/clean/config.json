@@ -1,0 +1,22 @@
+{
+  "unknown": "404",
+  "trailingSlash": "redirect",
+  "caseInsensitive": false,
+  "headers": {
+    "/assets/*": {
+      "cache-control": "public, max-age=31536000, immutable"
+    }
+  },
+  "generated": {
+    "/assets/hero.png": {
+      "width": 1200,
+      "height": 800,
+      "bytes": 40000
+    },
+    "/assets/og.png": {
+      "width": 1200,
+      "height": 630,
+      "bytes": 30000
+    }
+  }
+}

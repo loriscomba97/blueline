@@ -37,6 +37,7 @@ The AI crawlers and what each one does: [ai-crawlers.md](references/ai-crawlers.
 ```bash
 node scripts/page.mjs https://www.example.com/pricing       # raw HTML: head tags, canonical, links, structured data, rendering markers
 node scripts/variants.mjs https://www.example.com/pricing   # http and https, www, slash, case and parameter variants, hop by hop
+node scripts/variants.mjs https://www.example.com/          # the home page: www and scheme variants, and its canonical
 node scripts/robots.mjs https://www.example.com             # robots.txt as Google applies it, and each AI crawler's access
 node scripts/sitemap.mjs https://www.example.com            # sitemap entries: live, canonical, indexable; lastmod
 node scripts/not-found.mjs https://www.example.com --from-sitemap   # made-up URLs must answer 404

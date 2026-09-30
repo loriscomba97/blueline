@@ -123,7 +123,13 @@ Report pages that make the reader scroll past an introduction to find the answer
 
 **Where:** content, with the top results for the query · **Default severity:** fix soon
 
-**Our rule:** read the pages that rank in the top three for the primary query: their headings, depth, format and sources. Then check the page under review on three points:
+**Our rule:** read the pages that rank in the top three for the primary query: their headings, depth, format and sources.
+
+- **Which results.** Use the search engine the audience uses, usually Google, in their country and language. Say which tool and country you used. A ranking from another tool is not a Google results page, and the report says so.
+- **Which pages count.** Skip results of another kind than the page under review, such as forum threads, directory listings or store pages, and take the next one. Say which you skipped.
+- **How to compare.** Read the text, not only the headings. Quote only headings and short phrases.
+
+Then check the page under review on three points:
 
 - **Coverage.** It covers every subtopic that two or more of them cover. Leaving out the consensus costs rankings, however good the rest is.
 - **Format.** It matches the format the results reward: a step-by-step guide, a comparison, a definition.

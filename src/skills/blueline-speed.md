@@ -47,8 +47,9 @@ node scripts/assets.mjs https://www.example.com/          # JavaScript and CSS w
 
 ## Review
 
-1. For each law, read its reference and run its checks against your evidence.
-2. File every finding under the check written for it, with its severity, evidence, reason, fix and verification. Put measured numbers next to every speed finding, and say whether they are field data, lab data or file sizes.
-3. Write the report as [report.md](references/report.md) describes. The verdict table lists laws 8 and 9.
+1. **First, can the page be indexed?** `page.mjs` reports a `noindex` (check 10.1), and `curl -s https://www.example.com/robots.txt` shows whether crawlers are blocked (check 10.2). If the page cannot be indexed, nothing else in this review matters yet: report it under "Before anything else", as [report.md](references/report.md) describes, then continue.
+2. For each law, read its reference and run its checks against your evidence.
+3. File every finding under the check written for it, with its severity, evidence, reason, fix and verification. Put measured numbers next to every speed finding, and say whether they are field data, lab data or file sizes.
+4. Write the report as [report.md](references/report.md) describes. The verdict table lists laws 8 and 9.
 
 <!-- include: shared/rules.md -->

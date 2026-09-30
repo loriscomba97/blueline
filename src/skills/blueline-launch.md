@@ -27,10 +27,11 @@ The AI crawlers and what each one does: [ai-crawlers.md](references/ai-crawlers.
    - **A redesign or a platform migration:** parity first (10.9), plus the launch gate.
    - **A domain change:** redirects of every URL, and the Change of Address tool.
    - **A hosting change with the same URLs:** the hosting checklist in 10.9.
-2. **Which hosts.** Collect the production host, the staging or preview host, and, for a migration, the old site. Check 10.1 runs on both production and staging.
-3. **The old URLs.** A migration needs the list of URLs that mattered: the old sitemap, a Search Console export of the last 16 months, and a crawl. Without it, check 10.9 is not verified, and saying so is the most important line of the report.
-4. **The code.** The repository settles checks 10.1, 10.3, 10.4, 10.5 and 10.7: the indexing setting, the build guards, the fail-soft data layer, the publish switch and tracking.
-5. When you cannot ask, make the choices yourself and state them in the report header.
+2. **Which hosts.** Ask for every host the site answers on: production, staging, previews (hosting platforms often create one per deployment), and, for a migration, the old site. Check 10.1 runs on all of them. A launch on a platform address (`*.vercel.app`, `*.netlify.app`) followed later by a custom domain is a domain change: say so in "Open decisions".
+3. **Closed on purpose?** When the site is kept out of search until launch day, run the gate twice, as check 10.8 describes: before the switch, to prove everything else is ready, and after it.
+4. **The old URLs.** A migration needs the list of URLs that mattered: the old sitemap, a Search Console export of the last 16 months, and a crawl. Without it, check 10.9 is not verified, and saying so is the most important line of the report.
+5. **The code.** The repository settles checks 10.1, 10.3, 10.4, 10.5, 10.7 and 10.10: the indexing setting, the build guards, the fail-soft data layer, the publish switch, tracking, and the checks that run on every change.
+6. When you cannot ask, make the choices yourself and state them in the report header.
 
 ## Collect evidence
 
@@ -39,9 +40,10 @@ node scripts/page.mjs https://www.example.com/              # noindex, canonical
 node scripts/page.mjs https://staging.example.com/          # the same on staging: it must be noindex
 node scripts/robots.mjs https://www.example.com             # robots.txt status, rules, Sitemap line, AI crawlers
 node scripts/sitemap.mjs https://www.example.com            # sitemap entries: live, canonical, indexable
-node scripts/variants.mjs https://www.example.com/          # bare domain and www, http and https, slash and parameter variants
+node scripts/variants.mjs https://www.example.com/          # bare domain and www, http and https, and a parameter
+node scripts/variants.mjs https://www.example.com/pricing   # an inner page too: trailing-slash and case variants
 node scripts/not-found.mjs https://www.example.com --from-sitemap
-node scripts/links.mjs https://www.example.com              # broken internal links after the move
+node scripts/links.mjs https://www.example.com              # broken internal links, linked files, pages kept out of the index
 ```
 
 For a migration, request every old URL. Each one must answer `200` at the same path, or redirect once, permanently, to the closest page (check 3.6).
@@ -52,7 +54,7 @@ For a migration, request every old URL. Each one must answer `200` at the same p
 
 1. Read law 10's reference first, then the crawl laws the change touches.
 2. File every finding under the check written for it, with its severity, evidence, reason, fix and verification.
-3. End the report with the launch gate of check 10.8 as a checklist, each line marked done, failed or not verified, with its evidence.
+3. End the report with the launch gate of check 10.8 as a closing section (see [report.md](references/report.md)), each line marked done, failed or not verified, with its evidence. Record the reviewer, and leave the two human checks for the people who sign them.
 4. Write the report as [report.md](references/report.md) describes. The verdict table lists laws 1 to 3 and 10.
 
 <!-- include: shared/rules.md -->

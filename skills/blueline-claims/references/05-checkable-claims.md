@@ -134,6 +134,8 @@ An image made with a generative model says so twice:
 exiftool -XMP-iptcExt:DigitalSourceType="http://cv.iptc.org/newscodes/digitalsourcetype/trainedAlgorithmicMedia" cover.webp
 ```
 
+To read what a published file declares, `node scripts/assets.mjs <page>` reports each image's digital source type next to its alt text. By hand: `curl -s <image-url> | grep -a -o 'DigitalSourceType[^<]*'`. SVG files rarely carry the field; their declaration usually lives in the alt text alone.
+
 A real photo that was edited with a generative tool gets `compositeWithTrainedAlgorithmicMedia` instead. For stores, **Google Merchant Center** requires the generative AI value on AI-generated product images ([AI-generated content](https://support.google.com/merchants/answer/14743464)).
 
 Report AI-made images without either declaration.
@@ -142,9 +144,9 @@ Never tag real photos, screenshots or hand-made illustrations as AI-made: a fals
 
 ### 5.9 Drafts pass a fact-check before they publish
 
-**Where:** content · **Default severity:** blocker for claims left open
+**Where:** content · **Default severity:** blocker for claims left open in a draft; fix soon on a page that is already live
 
-When reviewing a draft, list every claim that someone must confirm, grouped by who can confirm it:
+When reviewing a draft, or a live page about to be promoted, list every claim that someone must confirm, grouped by who can confirm it:
 
 - product behavior;
 - supported platforms, integrations and versions;

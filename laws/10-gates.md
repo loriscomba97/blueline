@@ -126,7 +126,13 @@ After every change to tracking, check conversions in the vendor's debug view.
 
 **Where:** live URL · **Default severity:** blocker
 
-**Our rule:** at every launch, and after every migration cutover, two people check together:
+**Our rule:** at every launch, and after every migration cutover, two people check together. An agent can prepare the checklist and run every command, but the two checks stay human: one person reads the evidence, the other confirms it on production.
+
+**A site closed on purpose until launch day** is checked twice:
+- **before the switch:** everything below except items 1 and 2 must already pass, and the launch deploy must change the `noindex` and `robots.txt` together, in the same deploy;
+- **after the switch:** the whole gate again, within an hour of the deploy.
+
+The checklist:
 
 1. Production is indexable (10.1).
 2. `robots.txt` is open and lists the sitemap (10.2).
@@ -134,10 +140,12 @@ After every change to tracking, check conversions in the vendor's debug view.
 4. Canonicals are self-referencing, on the production host ([law 2](02-one-url.md)).
 5. The bare domain and `www`, and the trailing-slash variants, redirect as intended.
 6. A missing URL answers `404`.
-7. Tracking fires, and a test conversion is recorded.
-8. HTTPS is valid on every host.
+7. Tracking fires, and a test conversion is recorded. `page.mjs` lists the tracking tags it finds in the HTML; whether they fire needs the vendor's debug view in a browser.
+8. HTTPS is valid on every host: `curl -svo /dev/null https://www.example.com 2>&1 | grep -iE "expire date|subject:|SSL certificate"`.
 
 Record who checked, and when.
+
+**After a first launch**, submit the sitemap in Search Console and watch its coverage for 14 days (our rule), as after a migration.
 
 ### 10.9 A migration keeps what worked
 

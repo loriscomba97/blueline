@@ -119,7 +119,7 @@ Report structured data that only a tag manager or a client script injects, and a
 - `robots.txt` does not block the CSS and JavaScript files the page needs to render.
 - The CDN or firewall does not turn away the crawlers you want. Fetch the page with a crawler's user agent from [ai-crawlers.md](ai-crawlers.md). A `403`, a challenge page or a CAPTCHA is a signal that the crawler is blocked, whatever `robots.txt` says.
 
-Many CDNs verify crawlers by IP address, so a request that only borrows the user agent can be treated differently from the real crawler. Treat the result as a lead, and confirm it in the CDN's bot settings or in the server logs.
+The vendors' pages, linked from [ai-crawlers.md](ai-crawlers.md), give each crawler's full user-agent string; the token alone is not one. Many CDNs verify crawlers by IP address, so a request that only borrows the user agent can be treated differently from the real crawler. Treat the result as a lead, and confirm it in the CDN's bot settings or in the server logs.
 
 Blocking a crawler is a valid choice. Blocking one by accident is the finding.
 

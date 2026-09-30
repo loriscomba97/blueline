@@ -64,12 +64,15 @@ if (crawlers.length && !ai.some((c) => c.group === 'named')) {
   signals.push({ check: '1.7', message: 'no AI crawler is named in robots.txt: the policy is implicit (the * group)' });
 }
 
-const blockedCount = ai.filter((c) => !c.rootAllowed).length;
+// Tokens such as Google-Extended never fetch anything: they control how data already crawled is used.
+const fetchers = ai.filter((c) => c.kind.toLowerCase() !== 'token');
+const tokens = ai.filter((c) => c.kind.toLowerCase() === 'token');
+const blockedCount = fetchers.filter((c) => !c.rootAllowed).length;
 print({
   ...result,
   sitemaps: parsed.sitemaps,
-  aiSummary: `${blockedCount} of ${ai.length} AI crawler tokens may not fetch "/"; ${ai.filter((c) => c.group === 'named').length} have a group of their own`,
-  groups: parsed.groups.map((g) => ({ agents: g.agents, rules: g.rules.length })),
+  aiSummary: `${blockedCount} of ${fetchers.length} AI crawlers may not fetch "/"; ${ai.filter((c) => c.group === 'named').length} tokens are named in a group of their own; ${tokens.filter((t) => !t.rootAllowed).length} of ${tokens.length} usage tokens (${tokens.map((t) => t.token).join(', ')}) are disallowed`,
+  groups: parsed.groups.map((g) => ({ agents: g.agents, rules: g.rules.slice(0, 50).map((r) => `${r.type === 'allow' ? 'Allow' : 'Disallow'}: ${r.path}`) })),
   aiCrawlers: ai,
   signals,
 });

@@ -40,7 +40,7 @@ export const SKILLS = {
   blueline: { laws: LAWS, references: ['ai-crawlers.md'], tools: [...CRAWL_TOOLS, 'assets.mjs'] },
   'blueline-crawl': { laws: CRAWL_LAWS, references: ['ai-crawlers.md'], tools: CRAWL_TOOLS },
   'blueline-claims': { laws: ['04-one-source.md', '05-checkable-claims.md'], references: [], tools: ['lib.mjs', 'page.mjs', 'assets.mjs'] },
-  'blueline-content': { laws: ['05-checkable-claims.md', '06-one-question.md', '07-no-orphans.md'], references: [], tools: ['lib.mjs', 'page.mjs', 'links.mjs'] },
+  'blueline-content': { laws: ['05-checkable-claims.md', '06-one-question.md', '07-no-orphans.md'], references: [], tools: ['lib.mjs', 'page.mjs', 'links.mjs', 'assets.mjs'] },
   'blueline-speed': { laws: ['08-page-first.md', '09-media-once.md'], references: [], tools: ['lib.mjs', 'page.mjs', 'assets.mjs'] },
   'blueline-launch': { laws: ['10-gates.md', ...CRAWL_LAWS], references: ['ai-crawlers.md'], tools: CRAWL_TOOLS },
 };

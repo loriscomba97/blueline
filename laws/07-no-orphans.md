@@ -26,7 +26,9 @@ Report sitemap URLs with zero inbound links (orphans), and the pages that sell (
 
 **Where:** live URL, content · **Default severity:** polish
 
-Good anchors are two to eight words (our rule) that describe the target, placed inside a real sentence. Report:
+Good anchors are two to eight words (our rule) that describe the target, placed inside a real sentence. A card that is one big link (a title, a summary, an image) is different: its anchor is the whole card, and that is fine when the card starts with a descriptive title. The word count applies to links inside sentences.
+
+Report:
 
 - generic anchors: "click here", "read more", "this", "here";
 - bare URLs used as anchors in body copy;
@@ -66,7 +68,7 @@ Compare inbound link counts across the library. Report:
 
 **Where:** content · **Default severity:** fix soon
 
-A new article links to three to five related pages (our rule). Check every target against the live sitemap before publishing, so no link points at an unpublished page.
+A new article links to three to five related pages from its own text (our rule). Links in a related-posts module help, but they count separately. Check every target against the live sitemap before publishing, so no link points at an unpublished page.
 
 At least one existing page links to it on the day it goes live. Report drafts with no internal links, links to URLs that are not live, and new pages with no inbound link.
 

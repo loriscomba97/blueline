@@ -114,6 +114,15 @@ export async function follow(start, { maxHops = 10, ...options } = {}) {
   return { chain, final: { url, status: 0, headers: {}, location: null, body: '', error: `more than ${maxHops} redirects` } };
 }
 
+/** Two URLs written differently but equal once parsed ("https://a.com" and "https://a.com/" are one URL). */
+export function sameUrl(a, b) {
+  try {
+    return new URL(a).href === new URL(b).href;
+  } catch {
+    return a === b;
+  }
+}
+
 /** Same URL, ignoring a trailing slash on the path? Useful for messages, never for verdicts. */
 export function sameExceptSlash(a, b) {
   try {
@@ -228,6 +237,25 @@ export const GENERIC_ANCHORS = new Set(['click here', 'here', 'read more', 'more
 const HEADING_TAGS = /<h([1-6])\b[^>]*>([\s\S]*?)<\/h\1\s*>/gi;
 const ANCHOR = new RegExp(String.raw`<a\b(` + ATTRIBUTES_SRC + String.raw`)\s*>([\s\S]*?)<\/a\s*>`, 'gi');
 
+// Tags and snippets of common analytics and advertising vendors, as they appear in the raw HTML.
+// A loader that injects them after the first interaction still names its vendor in its inline code.
+const TRACKERS = [
+  ['Google Tag Manager', /googletagmanager\.com\/gtm\.js/i],
+  ['Google Analytics', /googletagmanager\.com\/gtag\/js|google-analytics\.com\/(?:analytics|ga)\.js/i],
+  ['Meta Pixel', /connect\.facebook\.net\/[^"'\s]*fbevents\.js/i],
+  ['LinkedIn Insight', /snap\.licdn\.com/i],
+  ['Microsoft Clarity', /clarity\.ms\/tag/i],
+  ['Hotjar', /static\.hotjar\.com/i],
+  ['HubSpot', /js\.hs-scripts\.com/i],
+  ['Segment', /cdn\.segment\.com/i],
+  ['Plausible', /plausible\.io\/js/i],
+];
+
+/** Does a robots meta value or X-Robots-Tag header keep the page out of the index? "none" means noindex, nofollow. */
+export function isNoindex(values) {
+  return values.some((v) => /\bnoindex\b/i.test(v ?? '') || /(?:^|[\s,:])none(?:[\s,]|$)/i.test(v ?? ''));
+}
+
 /** Is this URL signed to expire? Covers S3, Google Cloud Storage, CloudFront and Azure shared-access links. */
 export function isExpiringUrl(url) {
   if (!url) return false;
@@ -314,6 +342,30 @@ export function analyzeHtml(rawHtml, url) {
   const content = withoutBlocks(body, ['script', 'style', 'template', 'noscript', 'svg']);
   const headings = [...content.matchAll(HEADING_TAGS)].map((m) => ({ level: Number(m[1]), text: textOf(m[2]) }));
   const text = textOf(content);
+  // The page's own content, without navigation, related cards and footer: the first <article>, else <main>.
+  const mainHtml = (content.match(/<article\b[^>]*>([\s\S]*?)<\/article\s*>/i) ?? content.match(/<main\b[^>]*>([\s\S]*?)<\/main\s*>/i))?.[1] ?? null;
+  const mainText = mainHtml === null ? null : textOf(mainHtml);
+  const main = mainHtml === null
+    ? null
+    : {
+        from: /<article\b/i.test(content) ? 'article' : 'main',
+        wordCount: mainText ? mainText.split(' ').length : 0,
+        headings: [...mainHtml.matchAll(HEADING_TAGS)].map((m) => ({ level: Number(m[1]), text: textOf(m[2]) })),
+        paragraphs: [...mainHtml.matchAll(/<p\b[^>]*>([\s\S]*?)<\/p\s*>/gi)].map((m) => textOf(m[1])).filter((p) => p.split(' ').length >= 5).slice(0, 6).map((p) => p.slice(0, 500)),
+      };
+  // Is a link inside running text? True when the closest paragraph, list item, table cell or quote
+  // opened before it is still open.
+  const TEXT_OPEN = /<(?:p|li|td|dd|blockquote|figcaption)\b/gi;
+  const TEXT_CLOSE = /<\/(?:p|li|td|dd|blockquote|figcaption)\s*>/gi;
+  const insideText = (index) => {
+    const before = content.slice(Math.max(0, index - 1500), index);
+    const lastOf = (re) => {
+      let last = -1;
+      for (const m of before.matchAll(re)) last = m.index;
+      return last;
+    };
+    return lastOf(TEXT_OPEN) > lastOf(TEXT_CLOSE);
+  };
   const anchors = [...content.matchAll(ANCHOR)].map((m) => {
     const attrs = parseAttributes(m[1]);
     const inner = m[2];
@@ -334,6 +386,9 @@ export function analyzeHtml(rawHtml, url) {
       rel: attrs.rel ?? '',
       internal: Boolean(host) && siteOf(host) === siteOf(pageHost),
       jsOnly,
+      // A link around a whole card (a heading, a paragraph, an image) is not a link inside a sentence.
+      block: /<(?:h[1-6]|p|div|li|ul|img|figure|section|article)\b/i.test(inner),
+      inText: insideText(m.index),
     };
   });
 
@@ -379,14 +434,17 @@ export function analyzeHtml(rawHtml, url) {
       loading: t.attrs.loading ?? null,
     }));
 
-  // Everything that points somewhere, for expiring-link checks
+  // Everything that points somewhere, resolved against the page, for expiring-link checks.
+  // A meta tag's content counts only when it is itself a URL.
   const referenced = new Set();
+  const addReference = (value) => {
+    const resolved = value ? safeResolve(value.trim(), url) : null;
+    if (resolved && /^https?:/i.test(resolved)) referenced.add(resolved);
+  };
   for (const t of allTags) {
-    for (const key of ['src', 'href', 'poster', 'content', 'data-src']) {
-      const v = t.attrs[key];
-      if (v && /^(https?:)?\/\//i.test(v)) referenced.add(v);
-    }
-    if (t.attrs.srcset) for (const part of t.attrs.srcset.split(',')) referenced.add(part.trim().split(/\s+/)[0]);
+    for (const key of ['src', 'href', 'poster', 'data-src']) addReference(t.attrs[key]);
+    if (t.attrs.content && /^https?:\/\//i.test(t.attrs.content)) addReference(t.attrs.content);
+    if (t.attrs.srcset) for (const part of t.attrs.srcset.split(',')) addReference(part.trim().split(/\s+/)[0]);
   }
 
   const placeholders = [...new Set([...text.matchAll(PLACEHOLDER)].map((m) => m[0]))];
@@ -394,11 +452,13 @@ export function analyzeHtml(rawHtml, url) {
   // Markers that frameworks leave when part of a page is rendered only in the browser.
   const clientRendering = [
     [/BAILOUT_TO_CLIENT_SIDE_RENDERING/, 'a component bailed out to client-side rendering (Next.js marker)'],
+    [/<html\b[^>]*\bid=["']__next_error__["']/i, 'the page is a Next.js error shell, filled in by JavaScript'],
     [/You need to enable JavaScript to run this app/i, 'the page asks for JavaScript to show anything'],
   ]
     .filter(([pattern]) => pattern.test(String(rawHtml ?? '')))
     .map(([, label]) => label);
   const inlineCss = [...html.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style\s*>/gi)].map((m) => m[1]).join('\n');
+  const tracking = TRACKERS.filter(([, pattern]) => pattern.test(html)).map(([name]) => name);
 
   return {
     url,
@@ -415,10 +475,13 @@ export function analyzeHtml(rawHtml, url) {
       .map((t) => ({ hreflang: t.attrs.hreflang, href: t.attrs.href ?? '' })),
     metaRefresh: refresh ? refresh.attrs.content ?? '' : null,
     headings,
+    text,
+    main,
     wordCount: text ? text.split(' ').length : 0,
     emptyAppRoot: emptyRoot,
     clientRendering,
     inlineCss,
+    tracking,
     anchors,
     images,
     videos,
@@ -433,12 +496,70 @@ export function analyzeHtml(rawHtml, url) {
   };
 }
 
-/** Class names used in CSS rules that set an aspect-ratio, so images inside those elements keep their space. */
-export function aspectRatioClasses(css) {
+/** Hosts of local development servers, which usually answer on one scheme only. */
+export function isLocalHost(host) {
+  const name = String(host).replace(/:\d+$/, '').replace(/^\[|\]$/g, '');
+  return name === 'localhost' || name === '127.0.0.1' || name === '::1' || /\.(localhost|test)$/.test(name);
+}
+
+function nodesOf(data, into = []) {
+  if (Array.isArray(data)) data.forEach((d) => nodesOf(d, into));
+  else if (data && typeof data === 'object') {
+    into.push(data);
+    for (const value of Object.values(data)) if (value && typeof value === 'object') nodesOf(value, into);
+  }
+  return into;
+}
+
+const hasType = (node, type) => [].concat(node?.['@type'] ?? []).includes(type);
+const loose = (s) => textOf(String(s ?? '')).toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+
+/**
+ * Structured data that says something the visible page does not (check 4.1): FAQ questions and
+ * answers, offer prices, article headlines and author names. Each result is a lead to confirm.
+ */
+export function structuredDataMismatches(page) {
+  const visible = loose(page.text);
+  const h1 = loose(page.headings.find((h) => h.level === 1)?.text ?? '');
+  const out = [];
+  for (const block of page.jsonld.filter((j) => j.ok)) {
+    for (const node of nodesOf(block.data)) {
+      if (hasType(node, 'FAQPage')) {
+        for (const q of [].concat(node.mainEntity ?? [])) {
+          const question = loose(q?.name);
+          const answer = loose([].concat(q?.acceptedAnswer ?? [])[0]?.text);
+          if (question && !visible.includes(question)) out.push({ type: 'FAQPage', field: 'question', value: String(q.name).slice(0, 90) });
+          else if (answer && !visible.includes(answer)) out.push({ type: 'FAQPage', field: 'answer', value: String([].concat(q.acceptedAnswer)[0].text).slice(0, 90) });
+        }
+      }
+      if (hasType(node, 'Offer') && node.price !== undefined) {
+        const whole = String(node.price).split(/[.,]/)[0];
+        if (whole && !new RegExp(`(^|\\D)${whole}(\\D|$)`).test(page.text)) out.push({ type: 'Offer', field: 'price', value: `${node.price} ${node.priceCurrency ?? ''}`.trim() });
+      }
+      if ((hasType(node, 'BlogPosting') || hasType(node, 'Article') || hasType(node, 'NewsArticle')) && node.headline && h1) {
+        const headline = loose(node.headline);
+        if (!h1.includes(headline) && !headline.includes(h1)) out.push({ type: 'Article', field: 'headline', value: String(node.headline).slice(0, 90) });
+      }
+      for (const author of [].concat(node.author ?? [])) {
+        if (author && typeof author === 'object' && author.name && !visible.includes(loose(author.name))) {
+          out.push({ type: 'author', field: 'name', value: String(author.name).slice(0, 60) });
+        }
+      }
+    }
+  }
+  return out;
+}
+
+/**
+ * Class names used in CSS rules that reserve an element's space before an image inside it loads:
+ * an aspect-ratio, or a fixed height or min-height (px, rem, em or viewport units).
+ */
+export function cssSizedClasses(css) {
   const classes = new Set();
   const clean = String(css).replace(/\/\*[\s\S]*?\*\//g, ' ');
+  const fixed = /(?:^|;)\s*(?:min-)?height\s*:\s*[\d.]+(?:px|rem|em|vh|svh|dvh|lvh)\b/i;
   for (const m of clean.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
-    if (!/aspect-ratio\s*:/i.test(m[2])) continue;
+    if (!/aspect-ratio\s*:/i.test(m[2]) && !fixed.test(m[2])) continue;
     for (const c of m[1].matchAll(/\.([A-Za-z_][\w-]*)/g)) classes.add(c[1]);
   }
   return classes;
@@ -608,7 +729,7 @@ export function imageInfo(bytes) {
     // A truncated or unusual file: keep what was read.
   }
   const text = b.toString('latin1');
-  const source = text.match(/DigitalSourceType\s*(?:=\s*["']|>)\s*(?:https?:\/\/cv\.iptc\.org\/newscodes\/digitalsourcetype\/)?([A-Za-z]+)/);
+  const source = text.match(/DigitalSourceType\b[^<>]{0,40}?(?:=\s*["']|>)\s*(?:https?:\/\/cv\.iptc\.org\/newscodes\/digitalsourcetype\/)?([A-Za-z]+)/);
   info.digitalSourceType = source ? source[1] : null;
   info.c2pa = /c2pa/.test(text);
   return info;
@@ -616,6 +737,17 @@ export function imageInfo(bytes) {
 
 // ---------------------------------------------------------------------------------------------
 // Internal links, as a graph
+
+const FILE_PATH = /\.(?:pdf|zip|gz|dmg|pkg|exe|jpe?g|png|gif|webp|avif|svg|ico|mp4|webm|mov|mp3|wav|css|js|json|xml|txt|woff2?)$/i;
+
+/** A link to a file (a feed, a sitemap, an image, a download) rather than to a page. */
+export function isFileUrl(url) {
+  try {
+    return FILE_PATH.test(new URL(url).pathname);
+  } catch {
+    return false;
+  }
+}
 
 /** A link target as the crawler compares it: no fragment, no utm_ tracking parameters. */
 export function normalizeLink(href) {
@@ -642,9 +774,9 @@ export function sameSite(a, b) {
  * inbound links per URL, the links repeated on almost every page (navigation and footer), broken
  * and redirected targets, and anchor text problems.
  */
-export function summarizeLinks(pages, { sitemapUrls = [] } = {}) {
+export function summarizeLinks(pages, { sitemapUrls = [], files = [] } = {}) {
   const ok = pages.filter((p) => p.status === 200);
-  const byUrl = new Map(pages.map((p) => [p.url, p]));
+  const byUrl = new Map([...pages, ...files].map((p) => [p.url, p]));
   const pagesLinking = new Map();
   const presence = new Map();
   const instances = [];
@@ -659,7 +791,7 @@ export function summarizeLinks(pages, { sitemapUrls = [] } = {}) {
     }
     for (const link of page.links) {
       const target = normalizeLink(link.url);
-      if (target && target !== page.url) instances.push({ source: page.url, target, text: link.text });
+      if (target && target !== page.url) instances.push({ source: page.url, target, text: link.text, block: Boolean(link.block), inText: Boolean(link.inText) });
     }
   }
   // A link present on at least 80% of the pages that have links belongs to the template (navigation,
@@ -674,7 +806,7 @@ export function summarizeLinks(pages, { sitemapUrls = [] } = {}) {
     const key = `${source} ${target}`;
     if (pairs.has(key)) continue;
     pairs.add(key);
-    if (!templateTargets.has(target)) contentInbound.set(target, (contentInbound.get(target) ?? 0) + 1);
+    if (!templateTargets.has(target) && !isFileUrl(target)) contentInbound.set(target, (contentInbound.get(target) ?? 0) + 1);
   }
   const inboundCount = (url) => pagesLinking.get(url) ?? 0;
 
@@ -708,7 +840,7 @@ export function summarizeLinks(pages, { sitemapUrls = [] } = {}) {
     broken,
     redirected,
     genericAnchors: instances.filter((i) => GENERIC_ANCHORS.has(i.text.trim().toLowerCase())).map((i) => ({ source: i.source, target: i.target, text: i.text })),
-    longAnchors: instances.filter((i) => i.text.split(/\s+/).filter(Boolean).length > 12).map((i) => ({ source: i.source, target: i.target, text: i.text.slice(0, 80) })),
+    longAnchors: instances.filter((i) => i.inText && !i.block && i.text.split(/\s+/).filter(Boolean).length > 12).map((i) => ({ source: i.source, target: i.target, text: i.text.slice(0, 80) })),
     ambiguousAnchors: [...texts].filter(([, targets]) => targets.size > 1).map(([text, targets]) => ({ text, targets: [...targets].slice(0, 4) })),
   };
 }

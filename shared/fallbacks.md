@@ -1,4 +1,4 @@
-Run the scripts from this skill's folder, or call them by their full path. Each prints JSON: the facts it found, and `signals`, leads that name the check they belong to. A signal is not a finding until you have confirmed it.
+Run the scripts from this skill's folder, or call them by their full path. Each prints JSON: the facts it found, and `signals`, leads that name the check they belong to. A signal is not a finding until you have confirmed it. Put quotes around any URL that contains `?` or `&`, or the shell may reject it.
 
 **Without Node**, use the `curl` commands in each law's reference. Some of them send a HEAD request (`curl -I`) or save `page.html` in the current folder. Under a GET-only or write-nothing policy, use `curl -s -D - -o /dev/null <url>` for headers, and pipes instead of files.
 

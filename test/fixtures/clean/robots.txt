@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+# Training crawlers: allowed on this site. Change Allow to Disallow to opt out.
+User-agent: GPTBot
+User-agent: CCBot
+Allow: /
+
+Sitemap: {{origin}}/sitemap.xml

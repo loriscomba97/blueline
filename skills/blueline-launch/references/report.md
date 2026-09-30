@@ -13,7 +13,8 @@ Every blueline review has the same shape, so a reader can compare two reviews at
 
    A finding without evidence is not reported.
 2. **File it under the check written for it.** Every problem goes under the most specific check that describes it, and mentions the other checks it touches. When two checks fit, these win:
-   - indexing (`noindex`, `Disallow: /`, staging settings): 10.1 and 10.2;
+   - `noindex` in a meta tag or a header, and staging settings: 10.1;
+   - `robots.txt`, its rules and its status: 10.2;
    - missing image or video dimensions: 9.3;
    - a missing or wrong canonical: 2.2;
    - FAQ, breadcrumb or other markup without visible content: 4.2.
@@ -29,11 +30,12 @@ Every blueline review has the same shape, so a reader can compare two reviews at
    - a browser.
 
    Never estimate a score, a traffic figure or a speed metric.
-6. **Ask what only the owner knows.** When a finding depends on intent or on a fact you cannot check, write the finding as if the problem is real, and put the question under "Open decisions". Examples:
+6. **Nothing outside the review stays silent.** A page that cannot be indexed (a `noindex`, or `robots.txt` blocking it) is reported first, whatever the skill covers: under "Before anything else", with a link to law 10. Other signals from laws outside the review go in one line under the header ("Outside this review: ..."), pointing to the full `blueline` skill.
+7. **Ask what only the owner knows.** When a finding depends on intent or on a fact you cannot check, write the finding as if the problem is real, and put the question under "Open decisions". Examples:
    - Is the `noindex` deliberate?
    - Was this image made with a generative model?
    - Is this quote approved?
-7. **Fix, then verify.** Every finding ends with the fix and with how to check that the fix worked. When the fix belongs to another layer (the host, the CDN, the CMS), say which one.
+8. **Fix, then verify.** Every finding ends with the fix and with how to check that the fix worked. When the fix belongs to another layer (the host, the CDN, the CMS), say which one.
 
 ## Severity and status
 
@@ -50,30 +52,30 @@ Each law in the verdict table gets one status, from the findings filed under it:
 | **Broken** | At least one blocker. |
 | **Partly** | Findings, but no blocker. |
 | **Holds** | No findings. |
-| **Not verified** | The checks that decide the law could not be run. |
+| **Not verified** | The checks that decide the law could not be run, and nothing else was found. When findings exist, the status is Partly or Broken, and the missing check goes under "Not verified". |
 
 ## Template
+
+**Scope.** The verdict table has one row per law in scope: all ten for a full review, fewer for a focused skill. When the review covers a single check, skip the table and start with the findings.
 
 ```markdown
 # blueline review: {site, page or change}
 
 {date} · Reviewed: {the URLs, repository, draft or diff} · Evidence: {live site, code, content, data provided}
-Pages sampled: {the list, and any template the site does not have} · Sources in the references checked on 30 September 2026
+Pages sampled: {the pages, and the usual page types the site does not have, such as "no pricing page"}
+Choices made without asking: {the query assumed, the search tool and country used for the top results, the crawl limit}
+Outside this review: {signals from laws this skill does not cover, in one line, or "none"}
+Sources in the references checked on 30 September 2026
+
+## Before anything else
+
+{Only when the page or site cannot be indexed: the finding, with law 10 linked. Otherwise leave this section out.}
 
 ## Verdict
 
 | Law | Status | In one line | Findings |
 |---|---|---|---|
-| 1. Everything that matters is in the first HTML response | Holds / Partly / Broken / Not verified | ... | 3, 7 |
-| 2. One page, one URL | ... | ... | ... |
-| 3. No URL dies by accident | ... | ... | ... |
-| 4. Every fact has one source | ... | ... | ... |
-| 5. Every claim can be checked | ... | ... | ... |
-| 6. Every page answers one question | ... | ... | ... |
-| 7. No page is an orphan | ... | ... | ... |
-| 8. Your page loads first; everything else waits | ... | ... | ... |
-| 9. Media is prepared once and cached forever | ... | ... | ... |
-| 10. Nothing ships without a gate | ... | ... | ... |
+| {one row per law in scope} | Holds / Partly / Broken / Not verified | ... | 3, 7 |
 
 ## Blockers
 
@@ -109,9 +111,11 @@ Pages sampled: {the list, and any template the site does not have} · Sources in
 - **Law 8, partly:** no third-party scripts and no web fonts from other origins.
 ```
 
-**Scope.** Keep only the laws that were in scope in the verdict table. When the review covers a single law or check, skip the table and start with the findings.
-
 **What holds** has one line for every law in scope that fully or partly holds, with the evidence for what works.
+
+**Closing sections.** A skill can ask for a section of its own after "What holds", such as the launch gate of `blueline-launch`. It goes before the closing line.
+
+**Other sites.** When the review compares the page with other sites (the top results for a query), quote only their headings and short phrases. Paraphrase the rest.
 
 ## After the report
 
