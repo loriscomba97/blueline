@@ -6,7 +6,7 @@ blueline is an [Agent Skill](https://agentskills.io) tested with Claude Code and
 
 [Get started](#get-started) · [The ten laws](laws/README.md) · [Example report](docs/example-report.md) · [Issues](https://github.com/loriscomba97/blueline/issues)
 
-[![CI workflow](https://img.shields.io/badge/CI-workflow-lightgrey)](.github/workflows/ci.yml)
+[![CI](https://github.com/loriscomba97/blueline/actions/workflows/ci.yml/badge.svg)](https://github.com/loriscomba97/blueline/actions/workflows/ci.yml)
 [![MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 ## See it in action
