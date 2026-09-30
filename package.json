@@ -11,7 +11,7 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "check": "node scripts/build.mjs --check && node scripts/validate.mjs",
-    "test": "node --test test/",
+    "test": "node --test \"test/**/*.test.mjs\"",
     "check:safety": "node scripts/check-public-safety.mjs",
     "check:safety:history": "node scripts/check-public-safety.mjs --history"
   }
