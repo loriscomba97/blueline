@@ -135,12 +135,17 @@ test('noindex in all its spellings', () => {
 });
 
 test('staging and preview hosts are recognized by their names', () => {
-  for (const host of ['staging.example.com', 'staging.website.example.com', 'dev-app.example.com', 'my-site-git-main.vercel.app', 'preview.example.org']) {
-    assert.equal(isStagingHost(host), true, host);
-  }
-  for (const host of ['www.example.com', 'example.com', 'developer.example.com', 'devices.example.com', 'blog.example.com']) {
-    assert.equal(isStagingHost(host), false, host);
-  }
+  const previews = [
+    'staging.example.com', 'staging.website.example.com', 'dev-app.example.com', 'preview.example.org',
+    'my-site-git-main.vercel.app', 'my-site-4fk2mz8qa-acme.vercel.app', 'deploy-preview-42--my-site.netlify.app', 'a1b2c3d4.my-site.pages.dev',
+  ];
+  for (const host of previews) assert.equal(isStagingHost(host), true, host);
+  // A platform's production address is production.
+  const production = [
+    'www.example.com', 'example.com', 'developer.example.com', 'devices.example.com', 'blog.example.com',
+    'my-site.vercel.app', 'my-site-acme.vercel.app', 'my-marketing-site.vercel.app', 'my-site.netlify.app', 'my-site.pages.dev',
+  ];
+  for (const host of production) assert.equal(isStagingHost(host), false, host);
 });
 
 test('attributes and entities', () => {

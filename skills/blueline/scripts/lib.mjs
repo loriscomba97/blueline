@@ -517,9 +517,25 @@ export function analyzeHtml(rawHtml, url) {
 }
 
 /** Hosts of local development servers, which usually answer on one scheme only. */
-/** A host named like a staging or preview copy of a site: staging.example.com, a platform preview address. */
+/**
+ * A host named like a staging or preview copy of a site: staging.example.com, or a hosting platform's
+ * preview address. The platform's production address (project.vercel.app, site.netlify.app,
+ * project.pages.dev) is not one.
+ */
 export function isStagingHost(hostname) {
-  return /^(?:staging|stage|stg|dev|preview|qa|uat)[.-]|\.(?:vercel\.app|netlify\.app|pages\.dev)$/i.test(hostname);
+  const host = String(hostname).toLowerCase();
+  if (/^(?:staging|stage|stg|dev|preview|qa|uat)[.-]/.test(host)) return true;
+  if (host.endsWith('.vercel.app')) {
+    // Branch previews contain "-git-"; each deployment gets a 9-character id: project-4fk2mz8qa-team.
+    const label = host.slice(0, -'.vercel.app'.length);
+    const id = label.match(/-([a-z0-9]{9})-[a-z0-9-]+$/)?.[1];
+    return label.includes('-git-') || Boolean(id && /\d/.test(id));
+  }
+  // deploy-preview-42--site.netlify.app and branch--site.netlify.app
+  if (host.endsWith('.netlify.app')) return host.includes('--');
+  // id.project.pages.dev and branch.project.pages.dev
+  if (host.endsWith('.pages.dev')) return host.split('.').length > 3;
+  return false;
 }
 
 export function isLocalHost(host) {
