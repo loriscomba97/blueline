@@ -53,7 +53,8 @@ The AI crawlers and what each one does: [ai-crawlers.md](references/ai-crawlers.
    - pricing;
    - one article;
    - one listing page, such as the blog index;
-   - a made-up URL for the 404.
+   - a made-up URL for the 404;
+   - the home page of every staging or preview host the user knows of: it must not be indexable (check 10.1).
 
    Add every page the user named. State the list before you start.
 

@@ -10,7 +10,7 @@
  *
  * A signal is a lead, not a verdict: confirm it before reporting a finding.
  */
-import { analyzeHtml, cssSizedClasses, fail, follow, GENERIC_ANCHORS, isNoindex, parseArgs, print, request, sameExceptSlash, sameUrl, structuredDataMismatches, toHttpUrl, USER_AGENT } from './lib.mjs';
+import { analyzeHtml, cssSizedClasses, fail, follow, GENERIC_ANCHORS, isNoindex, isStagingHost, parseArgs, print, request, sameExceptSlash, sameUrl, structuredDataMismatches, toHttpUrl, USER_AGENT } from './lib.mjs';
 
 const { positional, values } = parseArgs(process.argv.slice(2), { flags: ['full', 'help'], options: ['user-agent'] });
 if (values.help || positional.length !== 1) fail('usage: node page.mjs <url> [--user-agent "..."] [--full]');
@@ -157,6 +157,10 @@ else if (!/^https?:\/\//i.test(ogImage)) signals.push(signal('9.9', `og:image is
 // Law 10: indexing
 const noindex = isNoindex([...page.robots, final.headers['x-robots-tag'] ?? '']);
 if (noindex) signals.push(signal('10.1', 'this URL carries noindex: right for staging, a blocker on a production page meant for search'));
+// Our rule: a host named like a staging or preview copy must not be indexable, whatever its canonical says.
+if (!noindex && isStagingHost(new URL(final.url).hostname)) {
+  signals.push(signal('10.1', `${new URL(final.url).hostname} looks like a staging or preview host, and this page can be indexed: if it is not production, serve noindex on every page, or put the host behind a password`));
+}
 if (page.metaRefresh) signals.push(signal('2.1', `meta refresh: ${page.metaRefresh}`));
 
 result.page = {

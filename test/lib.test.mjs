@@ -7,6 +7,7 @@ import {
   cssSizedClasses,
   imageInfo,
   isNoindex,
+  isStagingHost,
   summarizeLinks,
   decodeEntities,
   isAllowed,
@@ -122,6 +123,15 @@ test('noindex in all its spellings', () => {
   assert.equal(isNoindex(['none']), true);
   assert.equal(isNoindex(['googlebot: none']), true);
   assert.equal(isNoindex(['max-snippet:-1, max-image-preview:large']), false);
+});
+
+test('staging and preview hosts are recognized by their names', () => {
+  for (const host of ['staging.example.com', 'staging.website.example.com', 'dev-app.example.com', 'my-site-git-main.vercel.app', 'preview.example.org']) {
+    assert.equal(isStagingHost(host), true, host);
+  }
+  for (const host of ['www.example.com', 'example.com', 'developer.example.com', 'devices.example.com', 'blog.example.com']) {
+    assert.equal(isStagingHost(host), false, host);
+  }
 });
 
 test('attributes and entities', () => {

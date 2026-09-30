@@ -517,6 +517,11 @@ export function analyzeHtml(rawHtml, url) {
 }
 
 /** Hosts of local development servers, which usually answer on one scheme only. */
+/** A host named like a staging or preview copy of a site: staging.example.com, a platform preview address. */
+export function isStagingHost(hostname) {
+  return /^(?:staging|stage|stg|dev|preview|qa|uat)[.-]|\.(?:vercel\.app|netlify\.app|pages\.dev)$/i.test(hostname);
+}
+
 export function isLocalHost(host) {
   const name = String(host).replace(/:\d+$/, '').replace(/^\[|\]$/g, '');
   return name === 'localhost' || name === '127.0.0.1' || name === '::1' || /\.(localhost|test)$/.test(name);
