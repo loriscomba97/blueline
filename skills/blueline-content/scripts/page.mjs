@@ -89,7 +89,10 @@ if (page.og['og:url'] && page.canonicals[0] && !sameUrl(page.og['og:url'], page.
 
 // Law 4: structured data says what the page says
 const mismatches = structuredDataMismatches(page);
-for (const m of mismatches.slice(0, 10)) signals.push(signal('4.1', `${m.type} ${m.field} not found in the visible text: "${m.value}"`));
+for (const m of mismatches.slice(0, 10)) {
+  const where = m.against === 'h1' ? 'differs from the H1' : 'not found in the visible text';
+  signals.push(signal('4.1', `${m.type} ${m.field} ${where}: "${m.value}"`));
+}
 
 // Law 5: nothing unfinished
 if (page.placeholders.length) signals.push(signal('5.3', `placeholder text in the page: ${page.placeholders.join(', ')}`));

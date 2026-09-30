@@ -536,6 +536,8 @@ function nodesOf(data, into = []) {
 }
 
 const hasType = (node, type) => [].concat(node?.['@type'] ?? []).includes(type);
+/** The nodes a JSON-LD block states about the page itself: the block, or the entries of its @graph. */
+const topLevelNodes = (data) => (Array.isArray(data) ? data.flatMap(topLevelNodes) : Array.isArray(data?.['@graph']) ? data['@graph'] : [data]);
 const loose = (s) => textOf(String(s ?? '')).toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
 
 /**
@@ -547,6 +549,9 @@ export function structuredDataMismatches(page) {
   const h1 = loose(page.headings.find((h) => h.level === 1)?.text ?? '');
   const out = [];
   for (const block of page.jsonld.filter((j) => j.ok)) {
+    // The page's own article is a top-level node. Articles nested in a Blog or a list are entries
+    // the page lists: their headlines must be visible, not equal to the H1.
+    const own = new Set(topLevelNodes(block.data));
     for (const node of nodesOf(block.data)) {
       if (hasType(node, 'FAQPage')) {
         for (const q of [].concat(node.mainEntity ?? [])) {
@@ -560,9 +565,12 @@ export function structuredDataMismatches(page) {
         const whole = String(node.price).split(/[.,]/)[0];
         if (whole && !new RegExp(`(^|\\D)${whole}(\\D|$)`).test(page.text)) out.push({ type: 'Offer', field: 'price', value: `${node.price} ${node.priceCurrency ?? ''}`.trim() });
       }
-      if ((hasType(node, 'BlogPosting') || hasType(node, 'Article') || hasType(node, 'NewsArticle')) && node.headline && h1) {
+      if ((hasType(node, 'BlogPosting') || hasType(node, 'Article') || hasType(node, 'NewsArticle')) && node.headline) {
         const headline = loose(node.headline);
-        if (!h1.includes(headline) && !headline.includes(h1)) out.push({ type: 'Article', field: 'headline', value: String(node.headline).slice(0, 90) });
+        const value = String(node.headline).slice(0, 90);
+        if (own.has(node)) {
+          if (h1 && !h1.includes(headline) && !headline.includes(h1)) out.push({ type: 'Article', field: 'headline', value, against: 'h1' });
+        } else if (headline && !visible.includes(headline)) out.push({ type: 'Article', field: 'listed headline', value });
       }
       for (const author of [].concat(node.author ?? [])) {
         if (author && typeof author === 'object' && author.name && !visible.includes(loose(author.name))) {

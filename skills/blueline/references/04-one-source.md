@@ -30,7 +30,8 @@ Parse every JSON-LD block on the page and compare each value with the visible te
 | `FAQPage` questions and answers | The visible FAQ, word for word (whitespace aside) |
 | `Offer.price`, `priceCurrency` | The visible price and currency |
 | `author.name` | The visible byline |
-| `headline` | The H1 (or a faithful shortening) |
+| `headline` of the page's own article | The H1 (or a faithful shortening) |
+| `headline` of each article a listing names (`Blog.blogPost`, `ItemList`) | A title visible on the page |
 | `datePublished` | The visible publication date |
 | `dateModified` | The visible "updated" date, when the page shows one |
 | `Organization.sameAs` | The social profiles the site links to |

@@ -7,6 +7,7 @@ import {
   cssSizedClasses,
   imageInfo,
   isNoindex,
+  structuredDataMismatches,
   isStagingHost,
   summarizeLinks,
   decodeEntities,
@@ -86,6 +87,14 @@ test('a still behind a video counts as its poster; a sibling image does not', ()
   assert.equal(wrapped.videos[0].wrapperStill, true);
   const sibling = analyzeHtml('<html><body><div style="background-image:url(/still.webp)"></div><video preload="metadata"></video></body></html>', 'https://example.com/');
   assert.equal(sibling.videos[0].wrapperStill, false);
+});
+
+test('structured data: the article of the page is compared with the H1, listed articles with the visible text', () => {
+  const ld = (data) => `<script type="application/ld+json">${JSON.stringify(data)}</script>`;
+  const listing = analyzeHtml(`<html><head>${ld({ '@type': 'Blog', blogPost: [{ '@type': 'BlogPosting', headline: 'How to plan a week' }, { '@type': 'BlogPosting', headline: 'A post nobody lists' }] })}</head><body><h1>Blog</h1><article><h2>How to plan a week</h2></article></body></html>`, 'https://example.com/blog');
+  assert.deepEqual(structuredDataMismatches(listing).map((m) => [m.field, m.value]), [['listed headline', 'A post nobody lists']]);
+  const article = analyzeHtml(`<html><head>${ld({ '@graph': [{ '@type': 'BlogPosting', headline: 'Another title' }, { '@type': 'WebPage' }] })}</head><body><h1>How to plan a week</h1></body></html>`, 'https://example.com/blog/a');
+  assert.deepEqual(structuredDataMismatches(article).map((m) => [m.field, m.against]), [['headline', 'h1']]);
 });
 
 test('an empty application root is detected', () => {
