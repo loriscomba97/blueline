@@ -1,0 +1,11 @@
+# dependencies and output
+node_modules/
+coverage/
+
+# environment files: real values never enter the repository
+.env*
+!.env.example
+
+# os and editor
+.DS_Store
+*.log
